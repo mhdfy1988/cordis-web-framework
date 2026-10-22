@@ -1,0 +1,15 @@
+/* 文档业务样式；通用外壳由 @cordis-web/default-ui 提供。 */
+* { box-sizing: border-box; } body { margin: 0; font-family: system-ui, "Segoe UI", "Microsoft YaHei", sans-serif; } button,input { font: inherit; } button,a { -webkit-tap-highlight-color: transparent; }
+#app { min-height: 100vh; background: var(--cw-background, #fff); color: var(--cw-text, #303038); color-scheme: light; } #app[data-theme=dark] { color-scheme: dark; }
+kbd { font-size:11px; color:var(--cw-muted); padding-left:12px; }
+.navigation-group { padding:18px 0; border-bottom:1px solid var(--cw-border); } .navigation-group h2,.navigation-group summary { font-size:14px; font-weight:650; margin:0 0 8px; cursor:default; } .navigation-group summary { cursor:pointer; }
+.navigation-group a { display:block; padding:3px 0; font-size:13px; line-height:1.65; color:var(--cw-muted); overflow-wrap:anywhere; } .navigation-group a[aria-current=page] { color:var(--cw-accent); font-weight:600; }
+.plugin-manager-link { margin-top:20px; font-size:13px; }
+.outline-links a { display:block; color:var(--cw-muted); font-size:12px; line-height:1.65; padding:4px 0; } .outline-links .subheading { padding-left:12px; }
+.page-pagination { display:flex; justify-content:space-between; gap:20px; margin-top:48px; padding-top:24px; border-top:1px solid var(--cw-border); } .page-pagination a { width:48%; border:1px solid var(--cw-border); border-radius:8px; padding:12px 16px; font-size:13px; } .page-pagination small { display:block; color:var(--cw-muted); }
+.copy-feedback { font-size:12px; color:var(--cw-muted); min-height:20px; }
+.search-dialog { width:min(680px,calc(100vw - 32px)); max-height:80vh; border:1px solid var(--cw-border); border-radius:12px; padding:24px; background:var(--cw-background); color:var(--cw-text); } .search-dialog::backdrop { background:#0007; }
+.search-dialog label { font-size:14px; font-weight:600; } .search-input-row { display:flex; gap:12px; margin:12px 0 20px; } .search-input-row input { min-width:0; width:100%; border:1px solid var(--cw-border); border-radius:6px; background:var(--cw-panel); color:var(--cw-text); padding:8px 12px; }
+.search-dialog nav a { display:block; padding:10px 12px; border-top:1px solid var(--cw-border); font-size:14px; } #application-state { padding:40px; overflow-wrap:anywhere; } #application-state pre { white-space:pre-wrap; }
+.search-input-row button { flex-shrink:0; white-space:nowrap; }
+@media (max-width:959px) { .search-trigger kbd { display:none; } }

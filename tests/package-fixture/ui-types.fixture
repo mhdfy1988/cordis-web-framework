@@ -1,0 +1,26 @@
+import { createUiRegistry, resolveUiPosition } from 'cordis-web-framework/ui';
+import { createCommandRegistry } from 'cordis-web-framework/commands';
+import { createVueNavigation } from 'cordis-web-framework/presentation-vue/routing';
+import { createVueUi } from 'cordis-web-framework/presentation-vue/ui';
+import { bindCommandShortcuts, createVueTheme } from 'cordis-web-framework/presentation-vue/controls';
+import type { UiTheme } from 'cordis-web-framework/contracts/navigation';
+import type { CommandResult } from 'cordis-web-framework/contracts/commands';
+declare module 'cordis-web-framework/contracts/ui' {
+  interface UiPositions { 'typed.editor': { documentId: string } }
+}
+const ui = createUiRegistry();
+ui.register({ id: 'page', target: 'typed.editor', view: 'page', renderer: 'vue', range: '^1' });
+resolveUiPosition(ui, 'typed.editor', { scope: 'session', sessionId: 'one', props: { documentId: 'doc' } });
+// @ts-expect-error 静态声明表不能吞掉业务必需输入
+resolveUiPosition(ui, 'typed.editor', { scope: 'session', sessionId: 'one', props: {} });
+// @ts-expect-error 未声明位置须显式进入动态 API，不能伪装成已知静态位置
+ui.register({ id: 'page', target: 'unknown', view: 'page', renderer: 'vue', range: '^1' });
+const commands = createCommandRegistry();
+const result: Promise<CommandResult> = commands.execute('save', {});
+const nav = createVueNavigation({ ui, target: 'typed.editor', history: 'memory', onError() {} });
+const presenter = createVueUi({ registry: ui, views: new Map(), onError() {} });
+const element = document.createElement('div');
+const theme: UiTheme = { id: 'example', tokens: { '--cw-accent': '#123456' } };
+const dispose = createVueTheme(element).register(theme);
+bindCommandShortcuts(element, commands, () => ({}));
+void [presenter.Root, nav, result, dispose];

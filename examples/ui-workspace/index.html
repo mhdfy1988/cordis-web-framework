@@ -1,0 +1,6 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>界面插件验收</title><link rel="stylesheet" href="/app.css"></head>
+<body><div class="demo-frame"><details class="checks"><summary>界面插件验收</summary><form id="checks">
+<fieldset><legend>布局实现</legend><label><input type="radio" name="layout" value="sidebar" checked>侧栏</label><label><input type="radio" name="layout" value="topbar">顶栏</label></fieldset>
+<label><input type="checkbox" name="theme">深色主题</label><label><input type="checkbox" name="help" checked>帮助扩展</label><button id="stop" type="button">停止工作区</button>
+<output id="check-status" aria-live="polite">就绪</output></form></details><div id="workspace" class="ui-demo"></div></div><script type="module" src="/app.js"></script></body></html>

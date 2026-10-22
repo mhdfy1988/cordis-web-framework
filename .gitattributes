@@ -1,0 +1,5 @@
+# Preserve the exact UTF-8 source bytes used for release input hashes.
+* -text
+*.tgz binary
+*.png binary
+*.jpg binary

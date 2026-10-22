@@ -1,0 +1,20 @@
+{
+  "name": "example-standard-plugin",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "files": ["dist", "assets"],
+  "exports": { ".": "./dist/index.js" },
+  "scripts": { "build": "node build.mjs", "check": "node check.mjs" },
+  "dependencies": { "semver": "7.8.5" },
+  "peerDependencies": { "cordis-web-framework": "^0.1.0-rc.1" },
+  "devDependencies": { "cordis-web-framework": "file:../../framework.tgz", "esbuild": "0.28.2" },
+  "cordisWeb": {
+    "formatVersion": 1,
+    "manifest": { "id": "example.standard", "version": "1.0.0", "apiVersion": "^1", "requires": [], "provides": [{ "id": "example.greeting", "version": "1.0.0" }] },
+    "entries": { "node": "dist/index.js", "browser": "dist/browser.js" },
+    "assets": { "icon": "assets/icon.svg" },
+    "shared": []
+  }
+}

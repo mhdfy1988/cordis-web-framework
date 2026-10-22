@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "lib": ["ES2024", "DOM"],
+    "module": "NodeNext", "moduleResolution": "NodeNext",
+    "strict": true, "noEmit": true, "skipLibCheck": false, "types": []
+  },
+  "include": ["types*.mts"]
+}

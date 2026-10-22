@@ -1,0 +1,48 @@
+.default-shell {
+  --shell-background: var(--cw-background, #fff); --shell-panel: var(--cw-panel, #f6f6f7);
+  --shell-text: var(--cw-text, #303038); --shell-border: var(--cw-border, #e2e2e5); --shell-accent: var(--cw-accent, #3451b2);
+  position: relative; isolation: isolate; display: grid; align-content: start; grid-template-columns: 272px minmax(0, 1fr); grid-template-rows: 64px auto;
+  min-height: 100dvh; background: var(--shell-background); color: var(--shell-text);
+  font-family: system-ui, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 15px; line-height: 1.8;
+}
+.default-shell, .default-shell * { box-sizing: border-box; }
+.default-shell a { color: var(--shell-accent); text-decoration: none; }
+.default-shell a:hover { text-decoration: underline; }
+.default-shell button { font: inherit; background: var(--shell-panel); color: var(--shell-text); border: 1px solid var(--shell-border); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+.default-shell button:hover { border-color: var(--shell-accent); }
+.default-shell :focus-visible { outline: 2px solid var(--shell-accent); outline-offset: 3px; }
+.default-shell .shell-header { grid-column: 1 / -1; grid-row: 1; position: sticky; top: 0; height: 64px; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 32px; background: var(--shell-background); border-bottom: 1px solid var(--shell-border); }
+.default-shell .shell-brand { font-size: 17px; font-weight: 650; color: var(--shell-text); }
+.default-shell .shell-actions { display: flex; align-items: center; gap: 12px; }
+.default-shell .shell-actions > div { display: contents; }
+.default-shell .shell-navigation { grid-column: 1; grid-row: 2; position: sticky; align-self: start; top: 64px; max-height: calc(100dvh - 64px); min-height: calc(100dvh - 64px); overflow-y: auto; padding: 20px 28px 36px; background: var(--shell-panel); border-right: 1px solid var(--shell-border); }
+.default-shell .shell-workspace { grid-column: 2; grid-row: 2; min-width: 0; padding: 40px 40px 64px; display: grid; grid-template-columns: minmax(0, 720px) 208px; gap: 48px; align-content: start; justify-content: center; }
+.default-shell .shell-workspace.without-aside { grid-template-columns: minmax(0, 960px); }
+.default-shell main { min-width: 0; }
+.default-shell .shell-aside { position: sticky; align-self: start; top: 96px; max-height: calc(100dvh - 128px); overflow-y: auto; border-left: 1px solid var(--shell-border); padding-left: 16px; }
+.default-shell .shell-aside summary { list-style: none; font-size: 13px; font-weight: 600; margin-bottom: 8px; cursor: pointer; }
+.default-shell .shell-menu-button, .default-shell .shell-backdrop { display: none; }
+.default-shell .shell-overlays { display: contents; }
+.default-shell .shell-skip-link { position: fixed; top: -100px; z-index: 100; padding: 10px; background: var(--shell-background); }
+.default-shell .shell-skip-link:focus { top: 8px; }
+.default-shell[data-variant=topbar] { grid-template-columns: minmax(0, 1fr); grid-template-rows: 64px auto auto; }
+.default-shell[data-variant=topbar] .shell-navigation { grid-column: 1; grid-row: 2; position: relative; top: auto; z-index: 10; overflow: visible; min-height: 0; max-height: none; padding: 12px 32px; border-right: 0; border-bottom: 1px solid var(--shell-border); }
+.default-shell[data-variant=topbar] .shell-workspace { grid-column: 1; grid-row: 3; }
+@media (max-width:1279px) {
+  .default-shell .shell-workspace { grid-template-columns: minmax(0, 720px); gap: 24px; }
+  .default-shell .shell-aside { grid-row: 1; position: static; max-height: none; border-left: 0; padding: 0 0 12px; border-bottom: 1px solid var(--shell-border); }
+  .default-shell .shell-aside summary { list-style: revert; margin-bottom: 0; }
+}
+@media (max-width:959px) {
+  .default-shell { grid-template-columns: minmax(0, 1fr); }
+  .default-shell .shell-header { padding: 0 20px; gap: 8px; }
+  .default-shell .shell-brand { font-size: 14px; }
+  .default-shell .shell-actions { gap: 8px; }
+  .default-shell .shell-actions button { padding: 5px 8px; font-size: 12px; }
+  .default-shell .shell-menu-button { display: block; }
+  .default-shell .shell-navigation { display: none; position: fixed; z-index: 30; top: 64px; bottom: 0; left: 0; width: min(320px, 85vw); min-height: 0; max-height: none; }
+  .default-shell .shell-navigation.open { display: block; }
+  .default-shell .shell-backdrop { display: block; position: fixed; inset: 64px 0 0; z-index: 25; border: 0; border-radius: 0; background: #0006; }
+  .default-shell .shell-workspace { grid-column: 1; padding: 32px 24px 40px; }
+  .default-shell[data-variant=topbar] .shell-navigation { position: fixed; top: 64px; z-index: 30; overflow-y: auto; max-height: none; padding: 20px 28px; }
+}

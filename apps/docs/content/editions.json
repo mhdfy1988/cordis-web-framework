@@ -1,0 +1,13 @@
+{
+  "reference/ui.md": "editions/reference/ui.md",
+  "reference/core.md": "editions/reference/core.md",
+  "reference/foundation.md": "editions/reference/foundation.md",
+  "reference/hosts-http.md": "editions/reference/hosts-http.md",
+  "guide/plugins.md": "editions/guide/plugins.md",
+  "guide/communication.md": "editions/guide/communication.md",
+  "guide/concepts.md": "editions/guide/concepts.md",
+  "guide/ui.md": "editions/guide/ui.md",
+  "guide/templates.md": "editions/guide/templates.md",
+  "guide/index.md": "editions/guide/index.md",
+  "guide/documentation.md": "editions/guide/documentation.md"
+}

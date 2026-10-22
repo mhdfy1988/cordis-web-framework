@@ -1,0 +1,58 @@
+.markdown-content {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-size: 15px;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+.markdown-content :is(h1, h2, h3, h4) {
+  color: var(--cw-text);
+  line-height: 1.45;
+  font-weight: 650;
+  scroll-margin-top: 88px;
+}
+.markdown-content h1 { font-size: 30px; letter-spacing: -.4px; margin: 0 0 20px; }
+.markdown-content h2 { font-size: 22px; margin: 40px 0 16px; }
+.markdown-content h2:not(:first-of-type) { padding-top: 28px; border-top: 1px solid var(--cw-border); }
+.markdown-content h3 { font-size: 17px; margin: 28px 0 12px; }
+.markdown-content h4 { font-size: 15px; margin: 24px 0 10px; }
+.markdown-content p { margin: 12px 0; }
+.markdown-content :is(ul, ol) { padding-left: 24px; margin: 14px 0; }
+.markdown-content li + li { margin-top: 7px; }
+.markdown-content li > p { margin: 6px 0; }
+.markdown-content li :is(ul, ol) { margin: 6px 0; }
+.markdown-content strong { font-weight: 650; }
+.markdown-content a { text-underline-offset: 3px; }
+.markdown-content table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.75;
+  margin: 18px 0 24px;
+}
+.markdown-content :is(th, td) { padding: 10px 12px; border: 1px solid var(--cw-border); text-align: left; vertical-align: top; }
+.markdown-content th { background: var(--cw-panel); font-weight: 600; white-space: nowrap; }
+.markdown-content td:first-child code { white-space: nowrap; overflow-wrap: normal; }
+.markdown-content code { font-family: "Cascadia Code", Consolas, "SFMono-Regular", monospace; font-size: .87em; border-radius: 4px; padding: 2px 5px; background: var(--cw-panel); }
+.markdown-content div[class*=language-] { position: relative; border: 1px solid var(--cw-border); background: var(--cw-panel); margin: 18px 0 22px; border-radius: 8px; overflow: hidden; }
+.markdown-content pre { margin: 0; padding: 44px 20px 20px; overflow-x: auto; line-height: 1.75; font-size: 13px; }
+.markdown-content pre code { background: none; padding: 0; font-size: inherit; }
+.markdown-content .shiki span { color: var(--shiki-light, inherit); }
+.markdown-content .lang { position: absolute; left: 16px; top: 8px; color: var(--cw-muted); font-size: 11px; letter-spacing: .04em; }
+.markdown-content button.copy { position: absolute; top: 7px; right: 9px; padding: 3px 9px; opacity: 0; font-size: 12px; background: var(--cw-background); }
+.markdown-content button.copy::after { content: '复制'; }
+.markdown-content div[class*=language-]:is(:hover, :focus-within) button.copy { opacity: 1; }
+.markdown-content .header-anchor { margin-left: 8px; opacity: 0; }
+.markdown-content :is(h1, h2, h3, h4):hover .header-anchor, .markdown-content .header-anchor:focus { opacity: 1; }
+#app[data-theme=dark] .markdown-content .shiki, #app[data-theme=dark] .markdown-content .shiki span { color: var(--shiki-dark)!important; background-color: var(--shiki-dark-bg)!important; }
+.markdown-content blockquote { margin: 20px 0; padding: 10px 16px; border-left: 3px solid var(--cw-accent); background: var(--cw-panel); color: var(--cw-muted); font-size: 14px; }
+.markdown-content blockquote p { margin: 4px 0; }
+@media (max-width:959px) {
+  .markdown-content h1 { font-size: 25px; }
+  .markdown-content h2 { font-size: 21px; }
+  .markdown-content pre { padding: 42px 16px 16px; }
+  .markdown-content button.copy { opacity: 1; }
+}
+@media (hover:none) { .markdown-content button.copy { opacity: 1; } }

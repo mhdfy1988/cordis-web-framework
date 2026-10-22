@@ -1,0 +1,185 @@
+{
+  "name": "cordis-web-framework",
+  "version": "0.1.0-rc.1",
+  "private": false,
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/mhdfy1988/cordis-web-framework" },
+  "homepage": "https://mhdfy1988.github.io/cordis-web-framework/",
+  "type": "module",
+  "description": "Cordis 基座的 Web 通用框架：公共核心与独立浏览器、Node 宿主",
+  "engines": {
+    "node": ">=24.14.0 <25"
+  },
+  "packageManager": "npm@11.9.0",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "docs/w1-core.md",
+    "docs/w2-hosts.md",
+    "docs/w3-fullstack.md",
+    "docs/w4-ui.md",
+    "docs/w5-browser-tool.md",
+    "docs/w6-delivery.md",
+    "docs/guide",
+    "docs/index.md",
+    "docs/reference",
+    "docs/examples",
+    "docs/records.md",
+    "docs/architecture-baseline.md",
+    "docs/web-framework-plan.md",
+    "docs/reuse-evidence.md",
+    "docs/implementation-plan.md",
+    "docs/plugin-management.md",
+    "docs/plugin-package.md",
+    "CHANGELOG.md",
+    "THIRD_PARTY_NOTICES.md",
+    "patches/README.md",
+    "patches/cordis+4.0.0-rc.11.patch"
+  ],
+  "exports": {
+    "./presentation-vue/management": { "types": "./dist/presentation-vue/management.d.ts", "import": "./dist/presentation-vue/management.js" },
+    "./management": { "types": "./dist/plugin-management/index.d.ts", "import": "./dist/plugin-management/index.js" },
+    "./contracts/management": { "types": "./dist/contracts/management.d.ts", "import": "./dist/contracts/management.js" },
+    "./hosts/node/plugins": { "types": "./dist/hosts/node/plugins.d.ts", "import": "./dist/hosts/node/plugins.js" },
+    "./hosts/browser/plugins": { "types": "./dist/hosts/browser/plugins.d.ts", "import": "./dist/hosts/browser/plugins.js" },
+    "./presentation-vue/catalog": { "types": "./dist/presentation-vue/catalog.d.ts", "import": "./dist/presentation-vue/catalog.js" },
+    "./http-json/registry": { "types": "./dist/http-json/registry.d.ts", "import": "./dist/http-json/registry.js" },
+    "./ui": { "types": "./dist/ui-registry/index.d.ts", "import": "./dist/ui-registry/index.js" },
+    "./contracts/ui": { "types": "./dist/contracts/ui.d.ts", "import": "./dist/contracts/ui.js" },
+    "./commands": { "types": "./dist/commands/index.d.ts", "import": "./dist/commands/index.js" },
+    "./contracts/commands": { "types": "./dist/contracts/commands.d.ts", "import": "./dist/contracts/commands.js" },
+    "./contracts/navigation": { "types": "./dist/contracts/navigation.d.ts", "import": "./dist/contracts/navigation.js" },
+    "./presentation-vue/ui": { "types": "./dist/presentation-vue/ui.d.ts", "import": "./dist/presentation-vue/ui.js" },
+    "./presentation-vue/routing": { "types": "./dist/presentation-vue/routing.d.ts", "import": "./dist/presentation-vue/routing.js" },
+    "./presentation-vue/controls": { "types": "./dist/presentation-vue/controls.d.ts", "import": "./dist/presentation-vue/controls.js" },
+    "./http-json": {
+      "types": "./dist/http-json/index.d.ts",
+      "import": "./dist/http-json/index.js"
+    },
+    "./contracts/http": {
+      "types": "./dist/contracts/http.d.ts",
+      "import": "./dist/contracts/http.js"
+    },
+    "./hosts/browser": {
+      "types": "./dist/hosts/browser/index.d.ts",
+      "import": "./dist/hosts/browser/index.js"
+    },
+    "./hosts/node": {
+      "types": "./dist/hosts/node/index.d.ts",
+      "import": "./dist/hosts/node/index.js"
+    },
+    "./presentation-vue": {
+      "types": "./dist/presentation-vue/index.d.ts",
+      "import": "./dist/presentation-vue/index.js"
+    },
+    "./contracts/host": {
+      "types": "./dist/contracts/host.d.ts",
+      "import": "./dist/contracts/host.js"
+    },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./runtime": {
+      "types": "./dist/contracts/runtime.d.ts",
+      "import": "./dist/contracts/runtime.js"
+    },
+    "./composition": {
+      "types": "./dist/plugin-composition/index.d.ts",
+      "import": "./dist/plugin-composition/index.js"
+    },
+    "./contracts/composition": {
+      "types": "./dist/contracts/composition.d.ts",
+      "import": "./dist/contracts/composition.js"
+    },
+    "./runtime-cordis": {
+      "types": "./dist/runtime-cordis/index.d.ts",
+      "import": "./dist/runtime-cordis/index.js"
+    },
+    "./validation-zod": {
+      "types": "./dist/validation-zod/index.d.ts",
+      "import": "./dist/validation-zod/index.js"
+    },
+    "./version-semver": {
+      "types": "./dist/version-semver/index.d.ts",
+      "import": "./dist/version-semver/index.js"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "import": "./dist/config/index.js"
+    },
+    "./logging": {
+      "types": "./dist/logging-consola/index.d.ts",
+      "import": "./dist/logging-consola/index.js"
+    },
+    "./shutdown": {
+      "types": "./dist/shutdown/index.d.ts",
+      "import": "./dist/shutdown/index.js"
+    }
+  },
+  "scripts": {
+    "prepublishOnly": "node scripts/no-npm-publish.mjs",
+    "build:pages": "node scripts/pages.mjs",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "test": "node scripts/check.mjs",
+    "test:package": "node scripts/package-check.mjs",
+    "check:metadata": "node scripts/delivery.mjs metadata",
+    "test:delivery": "node scripts/delivery.mjs check",
+    "verify:delivery": "node scripts/delivery.mjs verify",
+    "check:release": "node scripts/delivery.mjs release",
+    "docs:reference": "node scripts/reference.mjs write",
+    "check:reference": "node scripts/reference.mjs check",
+    "test:guide": "node scripts/guide-check.mjs",
+    "docs:build": "node scripts/docs-build.mjs",
+    "docs:preview": "node scripts/docs-preview.mjs",
+    "check:docs": "node scripts/docs-check.mjs",
+    "test:management": "node --test --test-timeout=15000 tests/management-contract.test.ts tests/management-store.test.ts tests/management.test.ts tests/management-host.test.ts tests/management-failures.test.ts",
+    "test:management:browser": "node scripts/management-browser-check.mjs",
+    "test:npm": "node --test --test-timeout=60000 tests/npm-package.test.ts tests/npm-management.test.ts tests/npm-registry.test.ts",
+    "test:npm:browser": "node scripts/npm-browser-check.mjs",
+    "test:docs": "node scripts/docs-browser-check.mjs",
+    "test:browser": "node scripts/browser-check.mjs",
+    "build:records": "node scripts/records-build.mjs",
+    "test:records": "node scripts/records-check.mjs",
+    "test:ui": "node scripts/ui-check.mjs",
+    "build:ui": "node scripts/ui-workspace-build.mjs",
+    "example:ui": "node examples/ui-workspace/run.ts",
+    "build:png": "node scripts/png-tool.mjs build",
+    "test:png": "node scripts/png-tool.mjs check",
+    "example:png": "node scripts/png-serve.mjs",
+    "example:records": "node examples/records/run.ts",
+    "prepack": "node scripts/build.mjs",
+    "example:core": "node examples/core.ts",
+    "example:server": "node examples/server.ts"
+  },
+  "dependencies": {
+    "consola": "3.4.2",
+    "fastify": "5.12.7",
+    "semver": "7.8.5",
+    "zod": "4.6.7"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.44",
+    "vue-router": "^4.6.4"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    },
+    "vue-router": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/semver": "7.8.0",
+    "cordis": "4.0.0-rc.11",
+    "esbuild": "0.28.2",
+    "patch-package": "8.0.1",
+    "playwright": "1.64.1",
+    "typescript": "5.9.3",
+    "vue": "3.5.44",
+    "vue-router": "4.6.4"
+  }
+}

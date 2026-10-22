@@ -1,0 +1,11 @@
+diff --git a/node_modules/cordis/lib/index.js b/node_modules/cordis/lib/index.js
+--- a/node_modules/cordis/lib/index.js
++++ b/node_modules/cordis/lib/index.js
+@@ -376,6 +376,7 @@
+           while (this.inertia) {
+             await this.inertia;
+           }
++          this._updateState(() => {});
+         };
+       }, "ctx.plugin()");
+     } else {

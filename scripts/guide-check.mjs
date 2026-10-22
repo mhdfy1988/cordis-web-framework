@@ -1,0 +1,10 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { root, runNode, runNpm } from './run.mjs';
+import { checkGuideConsumer } from './guide-consumer.mjs';
+runNode(['scripts/build.mjs']); runNode(['scripts/reference.mjs', 'check']);
+const output = resolve(root, 'output'); mkdirSync(output, { recursive: true });
+const packed = JSON.parse(runNpm(['pack', '--ignore-scripts', '--json', '--pack-destination', output], { encoding: 'utf8', stdio: 'pipe' }).stdout)[0];
+const result = await checkGuideConsumer(resolve(output, packed.filename));
+writeFileSync(resolve(output, 'guide-check-result.json'), JSON.stringify(result, null, 2));
+console.log('随包教程的独立 Node／HTTP／Chrome 验证通过');

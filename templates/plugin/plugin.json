@@ -1,0 +1,5 @@
+{
+  "manifest": { "id": "example.greeting", "version": "1.0.0", "apiVersion": "^1.0.0", "requires": [], "provides": [{ "id": "example.greeting", "version": "1.0.0" }] },
+  "entries": { "node": "src/index.ts", "browser": "src/index.ts" },
+  "assets": []
+}

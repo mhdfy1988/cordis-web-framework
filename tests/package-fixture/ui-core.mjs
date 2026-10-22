@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import { createUiRegistry } from 'cordis-web-framework/ui';
+import { createCommandRegistry } from 'cordis-web-framework/commands';
+const ui = createUiRegistry();
+const handle = ui.register({ id: 'root', target: 'root', renderer: 'example', view: 'root', range: '^1' });
+assert.equal(ui.resolve('root', { scope: 'root', props: {} }).entries[0].instance, handle.instance);
+handle.dispose(); ui.close(); assert.equal(ui.inspect().contributions, 0);
+const commands = createCommandRegistry(); let count = 0;
+commands.register({ id: 'count', label: '计数', run() { count++; } });
+assert.equal(await commands.execute('count', {}), 'completed'); assert.equal(count, 1); await commands.close();
+console.log('W4 无 Vue／无 DOM 的公开界面注册表与命令包消费通过');

@@ -1,0 +1,31 @@
+@import '../records/browser/style.css';
+.demo-frame { max-width: 1320px; margin: 0 auto; padding: 20px; }
+.checks { margin-bottom: 16px; font-size: 14px; }
+.checks summary { cursor: pointer; width: fit-content; padding: 8px 0; color: #526579; }
+.checks form { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; padding: 14px; border: 1px solid #d9dfe7; border-radius: 8px; }
+.checks fieldset { display: flex; gap: 12px; border: 0; padding: 0; margin: 0; }
+.checks legend { float: left; margin-right: 12px; } .checks label { display: flex; align-items: center; gap: 5px; }
+.checks output { color: #526579; }
+.ui-demo { background: var(--cw-surface); color: var(--cw-text); border: 1px solid #b9c4d2; border-radius: 8px; min-height: 600px; }
+.cw-layout { padding: 24px; gap: 24px; min-width: 0; }
+.cw-layout.sidebar { display: grid; grid-template-columns: 160px minmax(0,1fr); }
+.cw-layout.topbar > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.cw-layout h1 { font-size: 20px; margin-bottom: 20px; } .cw-layout.topbar h1 { margin-bottom: 0; }
+.cw-layout nav ul { margin: 0; padding: 0; display: grid; gap: 8px; list-style: none; }
+.cw-layout.topbar nav ul { display: flex; }
+.cw-layout nav a { display: block; padding: 10px 16px; border: 1px solid transparent; border-radius: 6px; text-decoration: none; color: var(--cw-muted); }
+.cw-layout nav a:hover, .cw-layout nav a[aria-current=page] { color: var(--cw-accent); border-color: var(--cw-accent); }
+.ui-demo a:focus-visible { outline: 3px solid var(--cw-accent); outline-offset: 2px; }
+.cw-layout main, .record-view { min-width: 0; }
+.record-view > .identity { margin-bottom: 16px; }
+.record-view .workspace { grid-template-columns: 210px minmax(0,1fr); gap: 16px; }
+.ui-demo .record-editor, .ui-demo .record-list { background: var(--cw-surface); color: var(--cw-text); }
+.ui-demo .muted, .ui-demo .record-list small { color: var(--cw-muted); }
+.ui-demo .record-list button { background: var(--cw-surface); color: var(--cw-text); }
+.ui-demo .record-list button[aria-pressed=true], .ui-demo .record-list button:hover:not(:disabled) { background: var(--cw-accent); color: var(--cw-surface); }
+.ui-demo .record-list button small { color: inherit; }
+.ui-demo .task-status { color: var(--cw-muted); }
+.ui-demo .task-status.error { color: #c94249; }
+.ui-demo [data-ui-error] { padding: 16px; color: #a82b31; border: 1px solid #a82b31; border-radius: 6px; }
+@media (max-width: 850px) { .cw-layout.sidebar { grid-template-columns: 1fr; } .cw-layout.sidebar > aside { display: flex; gap: 16px; align-items: center; } .cw-layout.sidebar h1 { margin: 0; } .cw-layout.sidebar nav ul { display: flex; } }
+@media (max-width: 680px) { .demo-frame { padding: 12px; } .cw-layout { padding: 16px; gap: 16px; } .record-view .workspace { grid-template-columns: 1fr; } .cw-layout.topbar > header, .cw-layout.sidebar > aside { align-items: flex-start; flex-direction: column; gap: 12px; } .checks form { align-items: flex-start; flex-direction: column; } }

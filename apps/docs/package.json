@@ -1,0 +1,43 @@
+{
+  "name": "cordis-docs-acceptance",
+  "version": "0.1.0-rc.1",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24.14.0 <25"
+  },
+  "scripts": {
+    "templates": "node scripts/templates.mjs",
+    "sync:docs": "node build/sync-docs.ts",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "build": "node build/site.ts",
+    "test": "node tests/site.test.ts",
+    "check:clean": "node build/clean-check.ts",
+    "build:probe": "node scripts/build.mjs",
+    "test:probe": "node scripts/check.mjs",
+    "test:failure": "node scripts/build-failure.mjs",
+    "check:release": "node scripts/release-evidence.mjs",
+    "preview": "node build/preview.ts",
+    "audit:local": "node scripts/audit.mjs"
+  },
+  "dependencies": {
+    "@cordis-web/default-ui": "file:./packages/default-ui",
+    "cordis-web-framework": "file:kit/framework.tgz",
+    "minisearch": "7.2.0",
+    "vue": "3.5.44",
+    "vue-router": "4.6.4",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.0",
+    "@vitejs/plugin-vue": "6.0.10",
+    "esbuild": "0.28.2",
+    "linkedom": "0.18.12",
+    "playwright": "1.64.1",
+    "typescript": "5.9.3",
+    "vite": "8.3.5",
+    "vitepress": "1.6.4",
+    "vue-tsc": "3.3.13"
+  }
+}

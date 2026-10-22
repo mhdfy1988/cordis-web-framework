@@ -1,0 +1,11 @@
+{
+  "name": "cordis-framework-docs-tooling",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=24.14.0 <25" },
+  "devDependencies": {
+    "vitepress": "1.6.4"
+  }
+}
