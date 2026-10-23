@@ -4,6 +4,8 @@
 
 当前预发布版本 `0.1.0-rc.2`，自有代码采用 [MIT](https://github.com/mhdfy1988/cordis-web-framework/blob/main/LICENSE)。[完整文档应用](https://mhdfy1988.github.io/cordis-web-framework/) · [GitHub 预发布与交付包](https://github.com/mhdfy1988/cordis-web-framework/releases)。暂不上 npm，不要从注册表猜装同名包。正式认证、生产存储和不可信插件安全沙箱不在当前能力中。
 
+当前源码与文档站包含多标签页配置同步修复：浏览器可同时打开同一插件库，安装、启停与配置跨页协调，旧修订保存明确拒绝。此项仍列于 [Unreleased](CHANGELOG.md#unreleased)，现有 rc.2 发布附件不包含；后台冻结页面在恢复后补读，Node 单宿主独占保护不变。
+
 ## 开始使用
 
 插件管理由框架统一提供：支持可信独立 JSON／ESM 包的运行中安装、启停、卸载、持久意愿和重启恢复；没有管理页面也可使用。包自身独立构建，宿主不重建。浏览器／Node 分别适配存储和加载，当前不提供插件市场、自动升级或不可信沙箱。操作示例见[动态插件管理教程](docs/guide/plugin-management.md)，来源与验收边界见[专题说明](docs/plugin-management.md)。

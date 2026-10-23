@@ -32,11 +32,16 @@ export interface InstallationDocument {
   readonly plugins: readonly Installation[];
   readonly operation?: ManagementOperation;
 }
-/** 整个管理器存活期间独占同一安装库；write 必须修订号比较交换并原子提交。 */
+/** acquire 管理连接生命周期；write 必须修订号比较交换并原子提交。
+ * 共享库提供 exclusive 与 subscribe：前者串行整个管理操作，后者仅通知重新读取。
+ * 未提供共享协调的适配器仍须在 acquire 到释放之间独占安装库。
+ */
 export interface PluginStore {
   acquire(): Promise<Cleanup>;
   read(): Promise<unknown | undefined>;
   write(expectedRevision: number, document: InstallationDocument): Promise<void>;
+  exclusive?<T>(operation: () => Promise<T>): Promise<T>;
+  subscribe?(listener: () => void): Cleanup;
 }
 export interface PluginModuleLease {
   readonly plugin: RegisteredPlugin;
@@ -88,6 +93,8 @@ export interface PluginManager {
   inspect(): PluginManagerSnapshot;
   subscribe(listener: (snapshot: PluginManagerSnapshot) => void): Cleanup;
   configuration(id: string): Readonly<{ config: unknown; bindings: Readonly<Record<string, string>> }>;
+  /** 从权威安装库重新读取并协调本实例；不覆盖其他实例的持久意愿。 */
+  refresh(): Promise<PluginManagerSnapshot>;
   /** 不执行入口；acceptedIntegrity 必须由可信调用方对精确包内容明确确认。 */
   install(input: unknown, options: { readonly acceptedIntegrity: string; readonly config?: unknown;
     readonly bindings?: Readonly<Record<string, string>> }): Promise<PluginManagerSnapshot>;
@@ -98,7 +105,9 @@ export interface PluginManager {
   /** 默认保留应用用户数据；依赖仍存在时拒绝卸载。 */
   uninstall(id: string): Promise<PluginManagerSnapshot>;
   /** restart=true 显式保存新配置和启用意愿，再停止旧实例并重建；默认只允许停用项改配置。 */
-  configure(id: string, options: { readonly config: unknown; readonly bindings: Readonly<Record<string, string>>; readonly restart?: boolean }): Promise<PluginManagerSnapshot>;
+  configure(id: string, options: { readonly config: unknown; readonly bindings: Readonly<Record<string, string>>; readonly restart?: boolean;
+    /** 表单读取时的修订号；避免同步后仍用旧草稿覆盖其他页面。 */
+    readonly expectedRevision?: number }): Promise<PluginManagerSnapshot>;
   /** 拒绝新操作并等待已接纳操作，用于宿主先排空请求、再释放插件。 */
   drain(): Promise<void>;
   /** 停止接收新操作、排空已提交操作并等待真实运行时清理；不修改启停意愿。 */

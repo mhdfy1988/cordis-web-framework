@@ -19,9 +19,11 @@ export async function startLateHarness() {
     const revision = current?.revision ?? 0;
     await store.write(revision, { formatVersion: 1, revision: revision + 1, plugins: [] });
     let rejected = false;
-    try { const unexpected = await createBrowserPluginStore('p7-store-generation').acquire(); await unexpected(); }
+    try { const unexpected = await store.acquire(); await unexpected(); }
     catch { rejected = true; }
-    if (!rejected) throw new Error('过期释放句柄解除了新一轮浏览器安装库独占权');
+    if (!rejected) throw new Error('过期释放句柄关闭了新一轮浏览器安装库连接');
+    const peer = createBrowserPluginStore('p7-store-generation');
+    const releasePeer = await peer.acquire(); await releasePeer();
   } finally { await Promise.all([second(), second()]); }
   const urls = new Set<string>();
   const originalCreate = URL.createObjectURL.bind(URL); const originalRevoke = URL.revokeObjectURL.bind(URL);

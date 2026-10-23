@@ -21,7 +21,7 @@ page.on('console', message => { if (message.type() === 'error') errors.push(mess
 try {
   await page.goto(server.url);
   await page.locator('.markdown-content h1').waitFor();
-  // 独立用户上下文；同一安装库的存活写入者由框架独占，不能把两个写入实例当一次应用。
+  // 搜索网络故障用独立上下文隔离其设置；同库多标签页另由 management.test.ts 验证。
   const recoveryContext = await browser.newContext(); const recovery = await recoveryContext.newPage();
   await recovery.goto(server.url);
   await recovery.locator('.markdown-content h1').waitFor();

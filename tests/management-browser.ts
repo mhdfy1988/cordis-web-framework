@@ -16,7 +16,9 @@ async function rejects(fn: () => Promise<unknown>) { try { await fn(); } catch {
 const store = createBrowserPluginStore('p3-real-browser');
 const release = await store.acquire();
 try {
-  await rejects(() => createBrowserPluginStore('p3-real-browser').acquire());
+  const reader = createBrowserPluginStore('p3-real-browser');
+  const releaseReader = await reader.acquire();
+  await releaseReader();
   const previous = await store.read() as { revision: number } | undefined;
   const revision = previous?.revision ?? 0;
   await store.write(revision, { formatVersion: 1, revision: revision + 1, plugins: [] });

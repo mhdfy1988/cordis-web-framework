@@ -38,9 +38,12 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
   const diagnostics: string[] = [];
   let accepting = true;
   let poisoned = false;
+  let syncFailed = false;
   let queue: Promise<unknown> = Promise.resolve();
   let closing: Promise<PluginManagerSnapshot> | undefined;
   let packagesOwned = false;
+  let unsubscribeStore: (() => void | Promise<void>) | undefined;
+  const exclusive = <T>(operation: () => Promise<T>): Promise<T> => store.exclusive ? store.exclusive(operation) : operation();
   const report = (message: string) => { diagnostics.push(message.slice(0, 1024)); if (diagnostics.length > 100) diagnostics.shift(); };
   const manifestFor = (item: Installation) => (item.artifact?.manifest ?? item.package?.manifest ?? builtins.get(item.id)?.plugin.manifest)!;
   const manifests = () => new Map(document.plugins.map(item => [item.id, manifestFor(item)]));
@@ -52,7 +55,7 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
         enabled: item.enabled, state: current?.state ?? 'not-loaded' as const, ...(current ? { runtime: current } : {}) };
     });
     const required = [...builtins].filter(([, item]) => item.required).map(([id]) => id);
-    return freezeData({ revision: document.revision, closed: !accepting, ready: accepting && !poisoned && runtime.audit(required).ready,
+    return freezeData({ revision: document.revision, closed: !accepting, ready: accepting && !poisoned && !syncFailed && runtime.audit(required).ready,
       plugins, ...(document.operation ? { operation: document.operation } : {}), diagnostics: [...diagnostics] });
   }
   function notify() {
@@ -85,6 +88,7 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
     await releaseModule(id);
   };
   async function releaseResources() {
+    await unsubscribeStore?.();
     const snapshot = await runtime.close();
     if (snapshot.plugins.some(item => item.state !== 'stopped')) {
       report('运行时未干净关闭，插件库独占权保留');
@@ -143,12 +147,57 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
     for (const [id, handle] of handles) if (['failed', 'cleanup-failed'].includes(handle.inspect().state)) failures.push(`${id}: ${handle.inspect().state}`);
     if (failures.length) throw new Error(failures.join('；'));
   }
+  async function validateRecords(records: readonly Installation[]) {
+    for (const item of records) {
+      if (item.package) {
+        if (!options.packages) throw new Error('标准包需要平台仓库适配');
+        const artifact = validatePackageArtifact(item.package, environment);
+        if (artifact.manifest.id !== item.id || artifact.version !== item.version || builtins.has(item.id)) throw new Error('标准包安装身份不一致');
+        await options.packages.validate(artifact, environment);
+      } else if (item.artifact) {
+        const artifact = await validateArtifact(item.artifact, environment);
+        if (artifact.manifest.id !== item.id || artifact.manifest.version !== item.version || builtins.has(item.id)) throw new Error('安装记录身份不一致');
+      } else if (!builtins.has(item.id) || builtins.get(item.id)!.plugin.manifest.version !== item.version) throw new Error('内置插件目录与持久记录不一致');
+      if (builtins.get(item.id)?.required && !item.enabled) throw new Error('必需插件的持久意愿不可停用');
+    }
+    if ([...builtins.keys()].some(id => !records.some(item => item.id === id))) throw new Error('内置目录变化需要显式迁移');
+    validateManagedGraph(records, new Map(records.map(item => [item.id, manifestFor(item)])));
+  }
+  async function refreshShared(): Promise<boolean> {
+    const raw = await store.read();
+    const parsed = installationDocumentValidator.validate(raw);
+    if (!parsed.ok) throw new Error('插件库格式无效，不能静默重置');
+    if (parsed.value.revision === document.revision) return false;
+    if (parsed.value.revision < document.revision) throw new Error('插件库修订号倒退');
+    await validateRecords(parsed.value.plugins);
+    const previous = document;
+    // 远端配置／包发生变化时重建本页实例；仅运行结果变化不重启插件。
+    for (const item of previous.plugins) {
+      const next = parsed.value.plugins.find(value => value.id === item.id);
+      if (!next || !next.enabled || JSON.stringify({ ...item, enabled: true }) !== JSON.stringify({ ...next, enabled: true })) await stop(item.id);
+    }
+    document = freezeData(parsed.value);
+    // 本页激活失败属于本页实际状态，不回写覆盖另一页面的管理结果；仍允许停用来恢复。
+    try { await reconcile(); syncFailed = false; }
+    catch (error) { syncFailed = true; report(`同步插件运行失败：${error instanceof Error ? error.message : '未知错误'}`); }
+    if (document.operation?.state === 'pending') report(`检测到中断操作：${document.operation.action} ${document.operation.pluginId}；请核对实际状态`);
+    notify(); return true;
+  }
+  function refresh(): Promise<PluginManagerSnapshot> {
+    if (!accepting || poisoned) return Promise.reject(new Error('管理器已关闭或持久状态待恢复'));
+    const task = queue.then(() => exclusive(async () => {
+      try { await refreshShared(); return inspect(); }
+      catch (error) { syncFailed = true; notify(); throw error; }
+    }));
+    queue = task.catch(() => {}); return task;
+  }
   function find(id: string) { const value = document.plugins.find(item => item.id === id); if (!value) throw new Error(`插件未安装：${id}`); return value; }
   function enqueue(action: ManagementAction, id: string, prepare: () => Promise<readonly Installation[]> | readonly Installation[],
     finish?: () => readonly Installation[], afterPersist?: () => Promise<void>, afterCommit?: () => Promise<void>): Promise<PluginManagerSnapshot> {
     if (!accepting || poisoned) return Promise.reject(new Error('管理器已关闭或持久状态待恢复'));
-    const task = queue.then(async () => {
+    const task = queue.then(() => exclusive(async () => {
       if (poisoned) throw new Error('持久状态待恢复，拒绝后续排队操作');
+      if (store.exclusive && await refreshShared()) throw new Error('插件配置已被其他页面修改，已同步最新状态；请核对后重新操作');
       const records = await prepare();
       const known = new Map(records.map(item => [item.id, manifestFor(item)]));
       validateManagedGraph(records, known);
@@ -157,6 +206,7 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
       try {
         await afterPersist?.();
         await reconcile();
+        syncFailed = false;
         await save(finish?.() ?? document.plugins, { ...operation, state: 'succeeded' });
         await afterCommit?.();
         return inspect();
@@ -165,11 +215,12 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
         if (!poisoned) await save(document.plugins, { ...operation, state: 'failed', error: message.slice(0, 1024) });
         notify(); throw error;
       }
-    });
+    }));
     queue = task.catch(() => {}); return task;
   }
   const unsubscribe = runtime.subscribe(notify);
   try {
+    await exclusive(async () => {
     const raw = await store.read();
     if (raw !== undefined) {
       const parsed = installationDocumentValidator.validate(raw);
@@ -178,18 +229,7 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
       if (document.plugins.some(item => item.package) && !options.packages) throw new Error('标准包需要平台仓库适配');
       await options.packages?.recover(document.plugins.flatMap(item => item.package ? [item.package] : []));
       packagesOwned = options.packages !== undefined;
-      for (const item of document.plugins) {
-        if (item.package) {
-          const artifact = validatePackageArtifact(item.package, environment);
-          if (artifact.manifest.id !== item.id || artifact.version !== item.version || builtins.has(item.id)) throw new Error('标准包安装身份不一致');
-          await options.packages!.validate(artifact, environment);
-        } else if (item.artifact) {
-          const artifact = await validateArtifact(item.artifact, environment);
-          if (artifact.manifest.id !== item.id || artifact.manifest.version !== item.version || builtins.has(item.id)) throw new Error('安装记录身份不一致');
-        } else if (!builtins.has(item.id) || builtins.get(item.id)!.plugin.manifest.version !== item.version) throw new Error('内置插件目录与持久记录不一致');
-        if (builtins.get(item.id)?.required && !item.enabled) throw new Error('必需插件的持久意愿不可停用');
-      }
-      if ([...builtins.keys()].some(id => !document.plugins.some(item => item.id === id))) throw new Error('内置目录变化需要显式迁移');
+      await validateRecords(document.plugins);
       if (document.operation?.state === 'pending') report(`恢复中断操作：${document.operation.action} ${document.operation.pluginId}`);
     } else {
       await options.packages?.recover([]);
@@ -205,6 +245,14 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
     catch (error) { report(error instanceof Error ? error.message : '恢复失败'); }
     if (document.operation?.state === 'pending') await save(document.plugins, { ...document.operation,
       action: 'recover', state: diagnostics.length ? 'failed' : 'succeeded', error: '上次操作中断，已按持久意愿重新协调；请核对实际状态' });
+    });
+    unsubscribeStore = store.subscribe?.(() => {
+      if (accepting && !poisoned) void refresh().catch(error => {
+        report(`同步插件配置失败：${error instanceof Error ? error.message : '未知错误'}`); notify();
+      });
+    });
+    // 订阅前存在一个短窗口；显式读回消除漏通知，不能把广播当作配置真值。
+    if (store.exclusive) await exclusive(async () => { await refreshShared(); });
   } catch (error) {
     accepting = false;
     try { await releaseResources(); }
@@ -215,6 +263,7 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
   }
   const manager: PluginManager = {
     inspect,
+    refresh,
     configuration(id) { const item = find(id); return freezeData({ config: item.config, bindings: item.bindings }); },
     subscribe(listener) { if (!accepting) throw new Error('管理器已关闭'); listeners.add(listener); return () => { listeners.delete(listener); }; },
     install(input, settings) {
@@ -257,6 +306,7 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
     configure(id, settings) {
       const copy = structuredClone(settings);
       return enqueue('configure', id, () => {
+        if (copy.expectedRevision !== undefined && copy.expectedRevision !== document.revision) throw new Error('插件配置修订冲突；请重新读取后核对草稿');
         const item = find(id);
         if (!copy.restart && (item.enabled || handles.has(id))) throw new Error('修改配置前必须干净停用');
         if (copy.restart && builtins.get(id)?.required) throw new Error('必需插件不可在运行中重启');
@@ -272,11 +322,12 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
       return document.plugins.map(value => value.id === id ? { ...value, enabled: false } : value);
     }, () => document.plugins.filter(value => value.id !== id), undefined,
       async () => { if (installedPackage) await options.packages!.remove(installedPackage); }); },
-    async drain() { accepting = false; await queue; },
+    async drain() { accepting = false; await unsubscribeStore?.(); await queue; },
     close() {
       if (closing) return closing;
       accepting = false;
       closing = (async () => {
+        await unsubscribeStore?.();
         await queue;
         try { await releaseResources(); }
         catch (error) { notify(); throw error; }

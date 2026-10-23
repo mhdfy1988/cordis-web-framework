@@ -7,7 +7,8 @@ import { verifyBuild, digest } from '../build/integrity.ts';
 const build = JSON.parse(readFileSync('output/full-site-build.json', 'utf8')); verifyBuild(build);
 const server = await serveDocumentation(build.outDir, build.base);
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
-const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } }); const errors: string[] = [];
+const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+const page = await context.newPage(); const errors: string[] = [];
 page.on('pageerror', error => errors.push(error.message));
 page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
 const row = (id: string) => page.locator(`[data-plugin="${id}"]`);
@@ -17,6 +18,20 @@ const back = async () => { await page.getByRole('link', { name: '← 返回文�
 let releaseSearch: (() => void) | undefined;
 try {
   await manager(); assert.equal(await page.locator('.plugin-row').count(), 12);
+  // 同一浏览器上下文／同一安装库，不通过隔离上下文绕开多标签页问题。
+  const peer = await page.context().newPage();
+  peer.on('pageerror', error => errors.push(error.message));
+  await peer.goto(server.url); await peer.locator('.markdown-content h1').waitFor();
+  await peer.goto(server.url + '#/plugins');
+  await peer.getByRole('heading', { name: '插件管理', exact: true }).waitFor();
+  await row('docs.outline').getByRole('button', { name: '停用页内目录', exact: true }).click();
+  await peer.locator('[data-plugin="docs.outline"] [data-state="not-loaded"]').waitFor();
+  await peer.reload(); await peer.locator('[data-plugin="docs.outline"] [data-state="not-loaded"]').waitFor();
+  await peer.locator('[data-plugin="docs.outline"]').getByRole('button', { name: '启用页内目录', exact: true }).click();
+  await state('docs.outline', 'ready');
+  await peer.getByRole('button', { name: '停止应用', exact: true }).click();
+  await peer.getByRole('heading', { name: '文档应用已停止', exact: true }).waitFor();
+  await peer.close();
   assert.equal(await row('docs.foundation').getByRole('button', { name: /停用/ }).count(), 0);
   const pendingSearch = new Promise<void>(resolve => { releaseSearch = resolve; });
   await page.route('**/search.json', async route => { await pendingSearch; await route.abort().catch(() => {}); });

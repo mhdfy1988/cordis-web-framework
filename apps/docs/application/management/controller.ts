@@ -63,7 +63,8 @@ export function createPluginController(input: { document: CompositionDocument; c
     async changeLayout(next: 'sidebar' | 'topbar') {
       await execute('ui.default-layout', async target => {
         const settings = target.configuration('ui.default-layout');
-        await target.configure('ui.default-layout', { config: { ...settings.config as object, variant: next }, bindings: settings.bindings, restart: true });
+        await target.configure('ui.default-layout', { config: { ...settings.config as object, variant: next }, bindings: settings.bindings,
+          restart: true, expectedRevision: target.inspect().revision });
       });
     },
   };

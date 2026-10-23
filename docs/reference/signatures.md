@@ -204,6 +204,8 @@ export interface PluginManager {
         config: unknown;
         bindings: Readonly<Record<string, string>>;
     }>;
+    /** 从权威安装库重新读取并协调本实例；不覆盖其他实例的持久意愿。 */
+    refresh(): Promise<PluginManagerSnapshot>;
     /** 不执行入口；acceptedIntegrity 必须由可信调用方对精确包内容明确确认。 */
     install(input: unknown, options: {
         readonly acceptedIntegrity: string;
@@ -223,6 +225,8 @@ export interface PluginManager {
         readonly config: unknown;
         readonly bindings: Readonly<Record<string, string>>;
         readonly restart?: boolean;
+        /** 表单读取时的修订号；避免同步后仍用旧草稿覆盖其他页面。 */
+        readonly expectedRevision?: number;
     }): Promise<PluginManagerSnapshot>;
     /** 拒绝新操作并等待已接纳操作，用于宿主先排空请求、再释放插件。 */
     drain(): Promise<void>;
@@ -307,6 +311,8 @@ export interface PluginStore {
     acquire(): Promise<Cleanup>;
     read(): Promise<unknown | undefined>;
     write(expectedRevision: number, document: InstallationDocument): Promise<void>;
+    exclusive?<T>(operation: () => Promise<T>): Promise<T>;
+    subscribe?(listener: () => void): Cleanup;
 }
 ```
 
@@ -438,6 +444,8 @@ export interface PluginManager {
         config: unknown;
         bindings: Readonly<Record<string, string>>;
     }>;
+    /** 从权威安装库重新读取并协调本实例；不覆盖其他实例的持久意愿。 */
+    refresh(): Promise<PluginManagerSnapshot>;
     /** 不执行入口；acceptedIntegrity 必须由可信调用方对精确包内容明确确认。 */
     install(input: unknown, options: {
         readonly acceptedIntegrity: string;
@@ -457,6 +465,8 @@ export interface PluginManager {
         readonly config: unknown;
         readonly bindings: Readonly<Record<string, string>>;
         readonly restart?: boolean;
+        /** 表单读取时的修订号；避免同步后仍用旧草稿覆盖其他页面。 */
+        readonly expectedRevision?: number;
     }): Promise<PluginManagerSnapshot>;
     /** 拒绝新操作并等待已接纳操作，用于宿主先排空请求、再释放插件。 */
     drain(): Promise<void>;
@@ -528,6 +538,8 @@ export interface PluginStore {
     acquire(): Promise<Cleanup>;
     read(): Promise<unknown | undefined>;
     write(expectedRevision: number, document: InstallationDocument): Promise<void>;
+    exclusive?<T>(operation: () => Promise<T>): Promise<T>;
+    subscribe?(listener: () => void): Cleanup;
 }
 ```
 

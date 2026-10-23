@@ -3,35 +3,51 @@ import type { PluginStore } from '../../contracts/management.ts';
 export function createBrowserPluginStore(name: string): PluginStore {
   if (!name.trim() || name.length > 200) throw new TypeError('插件库名称无效');
   let db: IDBDatabase | undefined;
-  let releaseLock: (() => void) | undefined;
-  let holding: Promise<unknown> | undefined;
+  const key = 'cw-plugins:' + name;
+  let opening = false;
+  let channel: BroadcastChannel | undefined;
+  const listeners = new Set<() => void>();
   function database() { if (!db) throw new Error('未获取插件库'); return db; }
+  function notify() { for (const listener of [...listeners]) listener(); }
+  const onVisible = () => { if (document.visibilityState === 'visible') notify(); };
   return {
     async acquire() {
-      if (holding || !navigator.locks) throw new Error('插件库已占用或宿主不支持 Web Locks');
-      const acquired = Promise.withResolvers<void>();
-      const released = Promise.withResolvers<void>();
-      holding = navigator.locks.request('cw-plugins:' + name, { ifAvailable: true }, async lock => {
-        if (!lock) { acquired.reject(new Error('插件库已被其他页面占用')); return; }
-        acquired.resolve(); await released.promise;
-      });
-      holding.catch(acquired.reject);
-      releaseLock = released.resolve;
+      if (db || opening) throw new Error('插件库连接已占用');
+      if (!navigator.locks || typeof BroadcastChannel === 'undefined') throw new Error('宿主不支持 Web Locks 或 BroadcastChannel');
+      opening = true;
       try {
-        await acquired.promise;
         db = await new Promise<IDBDatabase>((resolve, reject) => {
-          const request = indexedDB.open('cw-plugins:' + name, 1);
+          const request = indexedDB.open(key, 1);
+          let rejected = false;
           request.onupgradeneeded = () => { request.result.createObjectStore('state'); };
-          request.onsuccess = () => { resolve(request.result); };
+          request.onsuccess = () => { if (rejected) request.result.close(); else resolve(request.result); };
           request.onerror = () => { reject(request.error); };
-          request.onblocked = () => { reject(new Error('插件库升级被其他页面阻塞')); };
+          request.onblocked = () => { rejected = true; reject(new Error('插件库升级被其他页面阻塞')); };
         });
-      } catch (error) { released.resolve(); await holding; holding = undefined; throw error; }
-      let releasing: Promise<void> | undefined;
+        channel = new BroadcastChannel(key);
+        channel.onmessage = notify;
+        window.addEventListener('focus', notify);
+        document.addEventListener('visibilitychange', onVisible);
+      } catch (error) { db?.close(); db = undefined; throw error; }
+      finally { opening = false; }
+      const connection = db;
+      let released = false;
       return () => {
-        releasing ??= (async () => { db?.close(); db = undefined; releaseLock?.(); await holding; holding = undefined; releaseLock = undefined; })();
-        return releasing;
+        if (released) return;
+        released = true;
+        connection.close(); db = undefined;
+        channel?.close(); channel = undefined; listeners.clear();
+        window.removeEventListener('focus', notify);
+        document.removeEventListener('visibilitychange', onVisible);
       };
+    },
+    async exclusive(operation) {
+      database();
+      return navigator.locks.request(key, async () => { database(); return operation(); });
+    },
+    subscribe(listener) {
+      database(); listeners.add(listener);
+      return () => { listeners.delete(listener); };
     },
     async read() {
       return new Promise<unknown>((resolve, reject) => {
@@ -43,7 +59,7 @@ export function createBrowserPluginStore(name: string): PluginStore {
     },
     async write(revision, document) {
       if (new TextEncoder().encode(JSON.stringify(document)).byteLength > 33_554_432) throw new Error('插件库超过 32 MiB');
-      return new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         const tx = database().transaction('state', 'readwrite');
         const store = tx.objectStore('state');
         const request = store.get('document');
@@ -54,6 +70,7 @@ export function createBrowserPluginStore(name: string): PluginStore {
         tx.oncomplete = () => { resolve(); };
         tx.onabort = tx.onerror = () => { reject(tx.error ?? new Error('插件库写入失败或修订冲突')); };
       });
+      channel?.postMessage(null);
     },
   };
 }

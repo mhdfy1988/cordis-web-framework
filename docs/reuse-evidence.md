@@ -14,6 +14,16 @@ W5 接续：PNG 业务在本仓独立实现，使用浏览器原生解码、Offs
 
 ## 来源清单
 
+### 2026-10-23：配置并发的最新上游证据
+
+核对官方 DeepSeek Harness 提交 `687f282e8625c6b8d11ff58211a90524be2e4317`（`0.2.1-rc.2`），不再以旧本地参考副本作当前结论。以下仅为源码阅读结论，不是 Harness 双窗口实测：
+
+- [settings 服务](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/packages/settings/settings/src/index.ts)：宿主持有配置权威；设置写入支持期望修订号，不匹配时拒绝。服务参数可省略修订号，不能泛称所有调用都强制冲突检查。
+- [配置编辑器](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/packages/boot/config-editor/src/index.ts)：一次修改中加文件锁、读改写补丁、原子替换及协调运行时，与热重载共享串行入口；不是浏览器页面生命周期锁。应用失败时尝试恢复旧补丁，不保证补偿永不失败。
+- [浏览器设置入口](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/packages/client/ui-settings/src/client/index.ts)：接收更新与重连通知后重新读取宿主配置；前端只是投影，不是独立配置真值。
+
+本框架只吸收权威存储、操作级协调、修订冲突与失效通知原则，不复制上游代码或引入其后端。纯静态浏览器适配由 IndexedDB 保存真值、Web Locks 串行管理操作、BroadcastChannel 通知补读；每页运行时独立。Node 继续维持单宿主保护。实现与验证范围见[管理教程](guide/plugin-management.md)和唯一实施计划。
+
 | 来源路径（相对 FluidBlock 根目录） | 复用内容 | 必须保留／补验的内容 |
 | --- | --- | --- |
 | `src/contracts/runtime.ts` | 服务、作用域、运行句柄、状态与诊断契约 | 状态语义、依赖绑定、只读投影；后续新增语义不能静默改变原行为 |
