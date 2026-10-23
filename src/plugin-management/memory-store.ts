@@ -7,7 +7,9 @@ export function createMemoryPluginStore(): PluginStore {
   return {
     async acquire() {
       if (acquired) throw new Error('插件库已被占用');
-      acquired = true; return () => { acquired = false; };
+      acquired = true;
+      let released = false;
+      return () => { if (!released) { released = true; acquired = false; } };
     },
     async read() { if (!acquired) throw new Error('未获取插件库'); return structuredClone(value); },
     async write(revision, next) {

@@ -6,11 +6,11 @@
 
 | 项目 | 当前状态 |
 | --- | --- |
-| 包名与版本 | `cordis-web-framework`，`0.1.0-rc.1` |
+| 包名与版本 | `cordis-web-framework`，`0.1.0-rc.2` |
 | 发行渠道 | MIT；GitHub 预发布附件，暂不上 npm |
 | 获取方式 | 经许可取得源码或本地交付包，不安装未经确认的 npm 同名包 |
 | 默认界面 | 核心不固定 UI；另有可选本地默认布局／主题包，文档站已使用 |
-| 本文档站 | 框架上的独立应用，目前仅本地预览，未部署到 Pages |
+| 本文档站 | 框架上的独立应用，[GitHub Pages 在线阅读](https://mhdfy1988.github.io/cordis-web-framework/) |
 
 ## 从这里开始
 

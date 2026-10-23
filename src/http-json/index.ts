@@ -46,12 +46,14 @@ async function readBoundedJson(response: Response): Promise<unknown> {
       const item = await reader.read();
       if (item.done) break;
       bytes += item.value.byteLength;
-      if (bytes > JSON_BYTE_LIMIT) { void reader.cancel().catch(() => {}); throw new ApiClientError('payload-too-large'); }
+      if (bytes > JSON_BYTE_LIMIT) throw new ApiClientError('payload-too-large');
       text += decoder.decode(item.value, { stream: true });
     }
     text += decoder.decode();
     return JSON.parse(text);
   } catch (error) {
+    // 释放读取锁不会停止上游；拒绝响应时主动取消，但不等待任意上游收尾。
+    void reader.cancel().catch(() => {});
     if (error instanceof ApiClientError) throw error;
     throw new ApiClientError('invalid-response');
   } finally { reader.releaseLock(); }
@@ -82,7 +84,10 @@ export function createJsonClient(options: {
     }
     try {
       const response = await fetcher(new URL(operation.path, base), { method: operation.method, headers, body, signal, credentials: 'omit', redirect: 'error' });
-      if (!response.headers.get('content-type')?.startsWith('application/json')) throw new ApiClientError('invalid-response');
+      if (!response.headers.get('content-type')?.startsWith('application/json')) {
+        void response.body?.cancel().catch(() => {});
+        throw new ApiClientError('invalid-response');
+      }
       const envelope = apiEnvelopeValidator.validate(await readBoundedJson(response));
       if (!envelope.ok || envelope.value.requestId !== response.headers.get('x-request-id')) throw new ApiClientError('invalid-response');
       const value = envelope.value;

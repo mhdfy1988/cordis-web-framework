@@ -77,6 +77,8 @@ export function preflight(document: unknown, catalog: PluginCatalog, apiVersion 
     try {
       const configuration = module.prepare(entry.config);
       if (!configuration.ok) {
+        if (!configuration.issues.length) issues.push({ code: 'config-invalid', pluginId: entry.id,
+          path: [...path, 'config'], message: '插件拒绝配置，但未提供问题明细' });
         issues.push(...configuration.issues.map(issue => ({ ...issue, code: 'config-invalid' as const,
           pluginId: entry.id, path: [...path, 'config', ...issue.path] })));
         continue;

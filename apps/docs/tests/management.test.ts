@@ -14,9 +14,20 @@ const row = (id: string) => page.locator(`[data-plugin="${id}"]`);
 const state = async (id: string, expected: string) => row(id).locator(`[data-state="${expected}"]`).waitFor();
 const manager = async () => { await page.goto(server.url + '#/plugins'); await page.getByRole('heading', { name: '插件管理', exact: true }).waitFor(); };
 const back = async () => { await page.getByRole('link', { name: '← 返回文档', exact: true }).click(); await page.locator('.markdown-content h1').waitFor(); };
+let releaseSearch: (() => void) | undefined;
 try {
   await manager(); assert.equal(await page.locator('.plugin-row').count(), 12);
   assert.equal(await row('docs.foundation').getByRole('button', { name: /停用/ }).count(), 0);
+  const pendingSearch = new Promise<void>(resolve => { releaseSearch = resolve; });
+  await page.route('**/search.json', async route => { await pendingSearch; await route.abort().catch(() => {}); });
+  await back();
+  const requested = page.waitForRequest('**/search.json');
+  await page.getByRole('button', { name: /搜索文档/ }).click(); await requested;
+  await page.keyboard.press('Escape'); await page.locator('dialog[open]').waitFor({ state: 'hidden' });
+  await manager(); await row('docs.search').getByRole('button', { name: '停用文档搜索', exact: true }).click();
+  await state('docs.search', 'not-loaded'); await state('docs.header', 'not-loaded');
+  releaseSearch?.(); await page.unroute('**/search.json');
+  await row('docs.search').getByRole('button', { name: '启用文档搜索', exact: true }).click(); await state('docs.search', 'ready');
   await page.screenshot({ path: 'output/plugin-manager-desktop.png' });
   for (let round = 0; round < 2; round++) {
     await row('ui.default-theme').getByRole('button', { name: '停用默认主题', exact: true }).click();
@@ -94,4 +105,4 @@ try {
     checks: ['manager-deep-link', 'locked-foundation', 'repeated-theme-restart', 'theme-controls-after-restart', 'search-stop-shortcut-and-restart', 'outline-restart', 'layout-switch', 'layout-stop-recovery', 'mobile', 'persist-layout-selection', 'persist-all-disabled-with-dependencies', 'refresh-document-without-layout-recovery', 'persist-reenabled', 'cleanup'], complete: true }, null, 2));
   console.log('插件管理：真实启停、依赖联动、布局切换／恢复、窄屏与完整关闭通过');
 } catch (error) { await page.screenshot({ path: 'output/plugin-manager-failure.png', fullPage: true }); throw error; }
-finally { await browser.close(); await server.close(); }
+finally { releaseSearch?.(); await browser.close(); await server.close(); }

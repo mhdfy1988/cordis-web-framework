@@ -31,7 +31,7 @@ export function createNodePackageRepository(options: NodePackageRepositoryOption
     const declaration = validatePackageDeclaration(json.cordisWeb);
     if (json.type !== 'module' || json.name !== artifact.name || json.version !== artifact.version
       || canonicalJson(declaration.manifest) !== canonicalJson(artifact.manifest)) throw new Error('标准包元数据不一致');
-    for (const key of declaration.shared) if (!(key in shared)) throw new Error(`宿主缺少共享模块：${key}`);
+    for (const key of declaration.shared) if (!Object.hasOwn(shared, key)) throw new Error(`宿主缺少共享模块：${key}`);
     for (const item of Object.values(lockFile.packages ?? {}) as { name?: string }[]) {
       if (item.name && /^(?:vue|vue-router|cordis|cordis-web-framework|@vue\/|@deepseek-ai\/cordis)/.test(item.name)) throw new Error('安装树不能携带宿主共享运行时');
     }

@@ -33,12 +33,14 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
   let document: InstallationDocument = { formatVersion: 1, revision: 0, plugins: [] };
   const handles = new Map<string, PluginHandle>();
   const leases = new Map<string, PluginModuleLease>();
+  const failedModuleReleases = new Set<string>();
   const listeners = new Set<(snapshot: PluginManagerSnapshot) => void>();
   const diagnostics: string[] = [];
   let accepting = true;
   let poisoned = false;
   let queue: Promise<unknown> = Promise.resolve();
   let closing: Promise<PluginManagerSnapshot> | undefined;
+  let packagesOwned = false;
   const report = (message: string) => { diagnostics.push(message.slice(0, 1024)); if (diagnostics.length > 100) diagnostics.shift(); };
   const manifestFor = (item: Installation) => (item.artifact?.manifest ?? item.package?.manifest ?? builtins.get(item.id)?.plugin.manifest)!;
   const manifests = () => new Map(document.plugins.map(item => [item.id, manifestFor(item)]));
@@ -65,16 +67,52 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
     catch (error) { poisoned = true; report('持久保存失败；停止新管理操作，需关闭后核对恢复'); notify(); throw error; }
     document = freezeData(parsed.value); notify();
   }
+  async function releaseModule(id: string) {
+    const lease = leases.get(id);
+    if (!lease) return;
+    try { await lease.release(); leases.delete(id); failedModuleReleases.delete(id); }
+    catch (error) { failedModuleReleases.add(id); report(`插件模块释放失败：${id}`); throw error; }
+  }
   const stop = async (id: string) => {
     const handle = handles.get(id);
-    if (!handle) return;
-    const snapshot = await handle.stop();
-    if (snapshot.state !== 'stopped') throw new Error(`插件未干净停用：${id} (${snapshot.state})`);
-    handles.delete(id);
-    runtime.forgetStopped?.(id);
-    await leases.get(id)?.release(); leases.delete(id);
+    if (handle) {
+      const snapshot = await handle.stop();
+      if (snapshot.state !== 'stopped') throw new Error(`插件未干净停用：${id} (${snapshot.state})`);
+      handles.delete(id);
+      runtime.forgetStopped?.(id);
+    }
+    // 模块可能已加载，但 prepare 失败而尚未创建运行句柄。
+    await releaseModule(id);
   };
+  async function releaseResources() {
+    const snapshot = await runtime.close();
+    if (snapshot.plugins.some(item => item.state !== 'stopped')) {
+      report('运行时未干净关闭，插件库独占权保留');
+      throw new Error('管理器清理失败');
+    }
+    unsubscribe();
+    const errors: unknown[] = [];
+    for (const id of [...leases.keys()]) {
+      try { await releaseModule(id); } catch (error) { errors.push(error); }
+    }
+    // 未释放的模块仍借用加载器／仓库资源，不能先关闭其所有者或交出库锁。
+    if (errors.length) throw new AggregateError(errors, '管理器清理失败；插件库独占权保留');
+    handles.clear();
+    for (const [name, cleanup] of [
+      ['模块加载器', () => loader.close?.()],
+      ['标准包仓库', async () => {
+        if (packagesOwned) { await options.packages!.close(); packagesOwned = false; }
+      }],
+    ] as const) {
+      try { await cleanup(); }
+      catch (error) { report(`${name}关闭失败`); errors.push(error); }
+    }
+    if (errors.length) throw new AggregateError(errors, '管理器清理失败；插件库独占权保留');
+    try { await unlock(); }
+    catch (error) { report('插件库独占权释放失败'); throw error; }
+  }
   async function moduleFor(item: Installation): Promise<RegisteredPlugin> {
+    if (failedModuleReleases.has(item.id)) throw new Error(`插件模块未干净释放，须先完成停用：${item.id}`);
     if (item.package) {
       if (!options.packages) throw new Error('标准包需要平台仓库适配');
       let lease = leases.get(item.id);
@@ -88,7 +126,9 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
   }
   async function reconcile() {
     validateManagedGraph(document.plugins, manifests());
-    for (const id of [...handles.keys()]) if (!document.plugins.some(item => item.id === id && item.enabled)) await stop(id);
+    for (const id of new Set([...handles.keys(), ...leases.keys()])) {
+      if (!document.plugins.some(item => item.id === id && item.enabled)) await stop(id);
+    }
     const failures: string[] = [];
     for (const item of document.plugins) {
       if (!item.enabled || handles.has(item.id)) continue;
@@ -137,6 +177,7 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
       document = freezeData(parsed.value);
       if (document.plugins.some(item => item.package) && !options.packages) throw new Error('标准包需要平台仓库适配');
       await options.packages?.recover(document.plugins.flatMap(item => item.package ? [item.package] : []));
+      packagesOwned = options.packages !== undefined;
       for (const item of document.plugins) {
         if (item.package) {
           const artifact = validatePackageArtifact(item.package, environment);
@@ -152,6 +193,7 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
       if (document.operation?.state === 'pending') report(`恢复中断操作：${document.operation.action} ${document.operation.pluginId}`);
     } else {
       await options.packages?.recover([]);
+      packagesOwned = options.packages !== undefined;
       const initial = await options.initialize?.();
       if (initial && (initial.length !== builtins.size || new Set(initial.map(item => item.id)).size !== initial.length
         || initial.some(item => !builtins.has(item.id) || (builtins.get(item.id)?.required && !item.enabled)))) throw new Error('首次配置迁移身份或必需状态无效');
@@ -164,7 +206,12 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
     if (document.operation?.state === 'pending') await save(document.plugins, { ...document.operation,
       action: 'recover', state: diagnostics.length ? 'failed' : 'succeeded', error: '上次操作中断，已按持久意愿重新协调；请核对实际状态' });
   } catch (error) {
-    accepting = false; await runtime.close(); await options.packages?.close(); unsubscribe(); await unlock(); throw error;
+    accepting = false;
+    try { await releaseResources(); }
+    catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], '管理器启动失败且清理失败；插件库独占权保留', { cause: error });
+    }
+    throw error;
   }
   const manager: PluginManager = {
     inspect,
@@ -231,12 +278,9 @@ export async function startPluginManager(options: PluginManagerOptions): Promise
       accepting = false;
       closing = (async () => {
         await queue;
-        const snapshot = await runtime.close();
-        if (snapshot.plugins.some(item => item.state !== 'stopped')) { report('运行时未干净关闭，插件库独占权保留'); notify(); throw new Error('管理器清理失败'); }
-        for (const lease of leases.values()) await lease.release(); leases.clear(); handles.clear();
-        await loader.close?.();
-        await options.packages?.close();
-        unsubscribe(); await unlock(); notify(); listeners.clear(); return inspect();
+        try { await releaseResources(); }
+        catch (error) { notify(); throw error; }
+        notify(); listeners.clear(); return inspect();
       })();
       return closing;
     },

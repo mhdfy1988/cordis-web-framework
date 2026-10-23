@@ -9,6 +9,20 @@ import type { PluginScope } from '../src/contracts/runtime.ts';
 import type { Component } from 'vue';
 
 export async function startLateHarness() {
+  // 源码和工程外公开包消费共用同一个越代释放回归。
+  const store = createBrowserPluginStore('p7-store-generation');
+  const first = await store.acquire(); await Promise.all([first(), first()]);
+  const second = await store.acquire();
+  try {
+    await first();
+    const current = await store.read() as { revision: number } | undefined;
+    const revision = current?.revision ?? 0;
+    await store.write(revision, { formatVersion: 1, revision: revision + 1, plugins: [] });
+    let rejected = false;
+    try { const unexpected = await createBrowserPluginStore('p7-store-generation').acquire(); await unexpected(); }
+    catch { rejected = true; }
+    if (!rejected) throw new Error('过期释放句柄解除了新一轮浏览器安装库独占权');
+  } finally { await Promise.all([second(), second()]); }
   const urls = new Set<string>();
   const originalCreate = URL.createObjectURL.bind(URL); const originalRevoke = URL.revokeObjectURL.bind(URL);
   URL.createObjectURL = blob => { const url = originalCreate(blob); urls.add(url); return url; };

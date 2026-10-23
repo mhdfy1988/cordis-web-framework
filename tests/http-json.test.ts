@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { createServer } from 'node:http';
 import { z } from 'zod';
 import { startNodeHost } from 'cordis-web-framework/hosts/node';
 import { createCordisRuntime } from 'cordis-web-framework/runtime-cordis';
@@ -111,4 +112,68 @@ test('在途 JSON 处理器有明确上限，超量拒绝而非无限排队', as
     assert.equal(calls, 1);
     released.resolve(); await first;
   } finally { released.resolve(); await first; await host.stop(); }
+});
+
+test('拒绝响应时取消未读完的流，且不等待上游取消完成', async () => {
+  const read = { ...operation, method: 'GET' as const, input: zodConfig(z.strictObject({})) };
+  for (const mode of ['content-type', 'utf8', 'oversize'] as const) {
+    let cancelled = 0; let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
+    const cancellation = Promise.withResolvers<void>();
+    const stream = new ReadableStream<Uint8Array>({
+      start(value) {
+        controller = value;
+        if (mode === 'utf8') value.enqueue(new Uint8Array([255]));
+        if (mode === 'oversize') value.enqueue(new Uint8Array(JSON_BYTE_LIMIT + 1));
+      },
+      cancel() { cancelled++; return cancellation.promise; },
+    });
+    const client = createJsonClient({ baseUrl: 'http://example.test', fetch: async () => new Response(stream, {
+      headers: { 'content-type': mode === 'content-type' ? 'text/plain' : 'application/json' },
+    }) });
+    try {
+      await assert.rejects(client.request(read, {}), (error: unknown) => error instanceof ApiClientError
+        && error.code === (mode === 'oversize' ? 'payload-too-large' : 'invalid-response'));
+      assert.equal(cancelled, 1, mode); assert.equal(stream.locked, false);
+    } finally { cancellation.resolve(); if (cancelled === 0) controller?.close(); }
+  }
+});
+
+test('响应流取消失败不覆盖原始协议错误', async () => {
+  const read = { ...operation, method: 'GET' as const, input: zodConfig(z.strictObject({})) };
+  let cancelled = 0;
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) { controller.enqueue(new Uint8Array([255])); },
+    cancel() { cancelled++; throw new Error('upstream-cancel-fault'); },
+  });
+  const client = createJsonClient({ baseUrl: 'http://example.test', fetch: async () => new Response(stream, {
+    headers: { 'content-type': 'application/json' },
+  }) });
+  await assert.rejects(client.request(read, {}), (error: unknown) => error instanceof ApiClientError && error.code === 'invalid-response');
+  assert.equal(cancelled, 1); assert.equal(stream.locked, false);
+});
+
+test('真实 HTTP 拒绝内容类型或非法 UTF-8 后关闭尚未结束的响应连接', async () => {
+  const read = { ...operation, method: 'GET' as const, input: zodConfig(z.strictObject({})) };
+  for (const mode of ['content-type', 'utf8'] as const) {
+    const disconnected = Promise.withResolvers<void>();
+    const server = createServer((_request, response) => {
+      response.once('close', disconnected.resolve);
+      response.writeHead(200, { 'content-type': mode === 'content-type' ? 'text/plain' : 'application/json' });
+      response.write(mode === 'utf8' ? Buffer.from([255]) : 'not-json');
+      // 故意不结束响应；必须由客户端拒绝路径取消，而不是等待上游完成。
+    });
+    await new Promise<void>(resolve => { server.listen(0, '127.0.0.1', resolve); });
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const address = server.address(); assert.ok(address && typeof address !== 'string');
+      const client = createJsonClient({ baseUrl: `http://127.0.0.1:${address.port}` });
+      await assert.rejects(client.request(read, {}), (error: unknown) => error instanceof ApiClientError && error.code === 'invalid-response');
+      await Promise.race([disconnected.promise, new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(() => { reject(new Error('客户端未关闭被拒绝的响应连接')); }, 2500);
+      })]);
+    } finally {
+      clearTimeout(timeout); server.closeAllConnections();
+      await new Promise<void>((resolve, reject) => { server.close(error => error ? reject(error) : resolve()); });
+    }
+  }
 });

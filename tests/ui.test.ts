@@ -89,6 +89,21 @@ test('会话：严格作用域、候选故障按编辑实例隔离，释放会�
   ui.fail(handle.instance, 'a'); assert.equal(resolve('a').failed, true); assert.equal(resolve('b').failed, false);
   ui.releaseSession('a'); assert.equal(resolve('a').entries.length, 1);
 });
+test('混合作用域：默认上下文与字面名 @root 的会话故障和释放互不污染', () => {
+  const { ui, owner, resolve } = fixture('single', 'session-maybe');
+  const handle = ui.registerDynamic(spec('editor', 'content'));
+  const named = () => ui.resolve('content', { scope: 'session', sessionId: '@root', props: {} }, { access: owner.children });
+  ui.fail(handle.instance);
+  assert.equal(resolve().failed, true);
+  assert.equal(named().entries.length, 1);
+  ui.fail(handle.instance, '@root');
+  assert.equal(named().failed, true);
+  ui.releaseSession('@root');
+  assert.equal(named().entries.length, 1);
+  assert.equal(resolve().failed, true, '释放命名会话不能清除默认上下文的故障');
+  ui.close();
+});
+
 test('观察与关闭：重入变动完成通知，清理异常有诊断且关闭不能重建贡献', () => {
   const ui = createUiRegistry(); let added = false; let observed = 0;
   ui.subscribe(() => { observed++; if (!added) { added = true; ui.register(spec('second', 'root', { priority: 1 })); } });
@@ -144,6 +159,46 @@ test('命令所属插件 stop 必须等待取消后的真实动作收尾，不�
   finish.resolve(); assert.equal((await stopping).state, 'stopped'); assert.equal(await action, 'cancelled');
   assert.equal(commands.inspect().running, 0); assert.equal(commands.inspect().commands, 0);
   await runtime.close(); await commands.close();
+});
+
+test('命令启用检查重入同会话仍去重，关闭等待真实动作结束', async () => {
+  const commands = createCommandRegistry(); let nested: ReturnType<typeof commands.execute> | undefined; let checks = 0; let calls = 0;
+  const entered = Promise.withResolvers<void>(); const finish = Promise.withResolvers<void>();
+  commands.register({ id: 'reenter-check', label: '启用重入', enabled() {
+    if (++checks === 1) nested = commands.execute('reenter-check', { sessionId: 'same' });
+    return true;
+  }, async run() { calls++; entered.resolve(); await finish.promise; } });
+  const outer = commands.execute('reenter-check', { sessionId: 'same' });
+  try {
+    await entered.promise;
+    assert.equal(checks, 1); assert.equal(calls, 1);
+    assert.equal(await nested, 'busy');
+    let closed = false; const closing = commands.close().then(() => { closed = true; });
+    await Promise.resolve(); assert.equal(closed, false); assert.equal(commands.inspect().running, 1);
+    finish.resolve(); assert.equal(await outer, 'cancelled'); await closing;
+    assert.equal(commands.inspect().running, 0);
+  } finally { finish.resolve(); await Promise.all([outer, nested]); await commands.close(); }
+});
+
+test('默认命令会话与名为 @root 的合法会话独立，同名会话仍去重', async () => {
+  const commands = createCommandRegistry(); let calls = 0;
+  const finish = Promise.withResolvers<void>();
+  commands.register({ id: 'sessions', label: '会话隔离', async run() { calls++; await finish.promise; } });
+  const root = commands.execute('sessions', {});
+  const named = commands.execute('sessions', { sessionId: '@root' });
+  try {
+    await Promise.resolve(); assert.equal(commands.inspect().running, 2); assert.equal(calls, 2);
+    assert.equal(await commands.execute('sessions', {}), 'busy');
+    assert.equal(await commands.execute('sessions', { sessionId: '@root' }), 'busy');
+    finish.resolve(); assert.deepEqual(await Promise.all([root, named]), ['completed', 'completed']);
+  } finally { finish.resolve(); await Promise.all([root, named]); await commands.close(); }
+});
+
+test('命令启用检查重入关闭时，不执行动作且关闭不会漏等或死锁', async () => {
+  const commands = createCommandRegistry(); let closing: Promise<void> | undefined; let calls = 0;
+  commands.register({ id: 'close-check', label: '启用时关闭', enabled() { closing = commands.close(); return true; }, run() { calls++; } });
+  assert.equal(await commands.execute('close-check', {}), 'missing'); await closing;
+  assert.equal(calls, 0); assert.equal(commands.inspect().running, 0);
 });
 test('Cordis 公开作用域拥有界面和命令：停用贡献插件不销毁业务服务，重启无残留', async () => {
   const runtime = createCordisRuntime(); const ui = createUiRegistry(); const commands = createCommandRegistry();

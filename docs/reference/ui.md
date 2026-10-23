@@ -45,6 +45,8 @@ register 返回**异步撤销函数**：立即禁止新调用、发送取消，�
 
 subscribe 返回撤销函数；inspect 给 commands/running/failures；close 禁止新动作、取消并等待排空，幂等。异常以安全 id 记录，不把原始业务错误暴露；应用按需要另行记录安全业务诊断。
 
+自 `0.1.0-rc.2` 起，启用条件检查前已登记真实任务完成句柄，检查中重入同命令／同会话仍返回 busy，撤销与关闭不会漏等。省略 sessionId 的默认会话与名为 `@root` 的合法会话独立，不占用任何字符串作为默认会话保留名。界面故障状态及 Vue 局部故障边界同样区分默认上下文与合法命名会话。
+
 ## createVueNavigation
 
 必填 `{ ui, target, history:'hash'|'memory', onError }`，返回 VueNavigation。不内建页面组件；target 应为已声明／将声明的 keyed 位置。

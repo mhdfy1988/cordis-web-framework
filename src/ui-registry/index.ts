@@ -14,7 +14,7 @@ export class UiError extends Error {
   constructor(diagnostic: UiDiagnostic) { super(`${diagnostic.code}: ${diagnostic.target}${diagnostic.contributionId ? ` / ${diagnostic.contributionId}` : ''}`); this.name = 'UiError'; this.diagnostic = diagnostic; }
 }
 interface Position { spec: UiPosition; owner: number; generation: number }
-interface Entry { spec: UiContribution; handle: UiHandle; failed: Set<string>; live: boolean }
+interface Entry { spec: UiContribution; handle: UiHandle; failed: Set<string | undefined>; live: boolean }
 interface Waiter { target: string; install: () => (() => void); generation?: number; cleanup?: () => void; live: boolean }
 
 /** 只选择贡献与维护声明生命周期；不挂载组件、不获取业务全局状态。 */
@@ -124,7 +124,7 @@ export function createUiRegistry(options: { onDiagnostic?: (diagnostic: UiDiagno
         || !['root', 'session'].includes(context.scope) || context.scope === 'session' && (!context.sessionId || context.sessionId.length > 128)
         || context.scope === 'root' && context.sessionId || position.spec.scope === 'root' && context.scope !== 'root'
         || position.spec.scope === 'session' && context.scope !== 'session') reject('scope', target);
-      const failureScope = context.sessionId ?? '@root';
+      const failureScope = context.sessionId;
       const failures = new Set<string>();
       let candidates = [...entries.values()].filter(entry => entry.spec.target === target);
       if (position.spec.kind === 'keyed') candidates = candidates.filter(entry => entry.spec.key === request.entryKey);
@@ -157,7 +157,7 @@ export function createUiRegistry(options: { onDiagnostic?: (diagnostic: UiDiagno
     fail(instance: number, sessionId?: string) {
       const entry = entries.get(instance); if (!entry) return;
       if (positions.get(entry.spec.target)?.spec.kind === 'chain') throw new Error('选择链组件故障由局部边界呈现，不改选其他候选');
-      const key = sessionId ?? '@root'; if (entry.failed.has(key)) return;
+      const key = sessionId; if (entry.failed.has(key)) return;
       if (entry.failed.size >= 256) throw new Error('请先释放不再使用的界面会话');
       entry.failed.add(key); report({ code: 'render-failed', target: entry.spec.target, contributionId: entry.spec.id }); notify();
     },

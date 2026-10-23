@@ -6,6 +6,22 @@ import { join } from 'node:path';
 import { createNodePluginStore } from '../src/hosts/node/plugin-store.ts';
 import { createNodePluginLoader } from '../src/hosts/node/plugin-loader.ts';
 import { artifactIntegrity } from '../src/plugin-management/artifact.ts';
+import { createMemoryPluginStore } from '../src/plugin-management/memory-store.ts';
+
+for (const kind of ['memory', 'node'] as const) test(`安装库：过期释放句柄不得解除重新获取的 ${kind} 独占权`, async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'cw-store-generation-'));
+  try {
+    const store = kind === 'memory' ? createMemoryPluginStore() : createNodePluginStore(join(directory, 'state.json'));
+    const first = await store.acquire(); await Promise.all([first(), first()]);
+    const second = await store.acquire();
+    try {
+      await first();
+      await store.write(0, { formatVersion: 1, revision: 1, plugins: [] });
+      await assert.rejects(store.acquire(), /占用/, '旧句柄不能解除新一代独占权');
+      if (kind === 'node') await assert.rejects(createNodePluginStore(join(directory, 'state.json')).acquire());
+    } finally { await Promise.all([second(), second()]); }
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
 
 test('P3 Node 安装库：独占、原子回读、修订冲突、释放与重新打开', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'cw-management-'));

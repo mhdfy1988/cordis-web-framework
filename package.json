@@ -1,6 +1,6 @@
 {
   "name": "cordis-web-framework",
-  "version": "0.1.0-rc.1",
+  "version": "0.1.0-rc.2",
   "private": false,
   "license": "MIT",
   "repository": { "type": "git", "url": "https://github.com/mhdfy1988/cordis-web-framework" },

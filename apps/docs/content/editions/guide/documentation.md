@@ -4,7 +4,7 @@
 
 ## 构建与预览
 
-在文档消费工程根目录执行（不是框架源码根目录）：
+同仓维护推荐从框架根目录执行 `npm.cmd run build:pages`：先核对冻结包来源，再锁安装、同步正文、构建和验收。单独操作消费应用时，在 `apps/docs` 执行：
 
 ```powershell
 npm.cmd ci --ignore-scripts --no-audit --no-fund
@@ -20,7 +20,7 @@ npm.cmd run preview
 | 项目 | 当前值 |
 | --- | --- |
 | 生产产物 | `output/documentation-site` |
-| 默认基础路径 | `/cordis-web-framework/`，仅本地约定，不表示已有同名远端 |
+| 默认基础路径 | `/cordis-web-framework/`，对应当前 GitHub Pages 子路径 |
 | 预览方式 | esbuild 静态文件服务，随机回环端口，不启动 Vite 开发服务 |
 | 浏览器路由 | `#/guide/plugins` 等散列地址，刷新不依赖服务器重写 |
 
@@ -62,7 +62,8 @@ VitePress 官方代码片段引用把已有教程文件展示在正文，展示�
 | `npm.cmd run build` | 严格类型、插件编译、全部页面和内部链接／锚点、生产产物 |
 | `npm.cmd test` | 生产子路径、逐页进入、搜索、复制、主题、深链接、窄屏、关闭清理与文档样例 |
 | `npm.cmd run check:clean` | 新目录锁安装、构建与同一套测试，不借相邻依赖 |
-| `npm.cmd run check:release` | 冻结 kit 和维护方候选完整性；正式发布条件仍单独判定 |
+| 根 `npm.cmd run check:release`／`verify:delivery` | 框架候选完整性与发布前置条件；不自动上传 |
+| 根 `npm.cmd run build:pages` | 核对 kit 来源、锁安装、同步正文、构建并验收框架驱动文档应用 |
 | `output/full-site-build.json` | 输入与产物摘要 |
 | `output/full-site-test.json` | 当前构建的浏览器回归 |
 | `output/reading-test.json` | 导航代码样例与阅读布局 |
@@ -78,6 +79,6 @@ VitePress 官方代码片段引用把已有教程文件展示在正文，展示�
 
 现有 VitePress 编译适配保持 1.6.4，开发链仍有已知安全告警，框架补丁维护链也需单独评估。可信本地内容、不启动 Vite 服务与独立静态预览降低暴露，但不等于漏洞已修复；正式发布前刷新审计，不用未验证 overrides 或强制升级掩盖风险。
 
-当前未公开部署，GitHub Pages 上线还需确认账号、仓库、许可证和内容范围。只上传静态产物，不公开整个消费工程或 kit。
+当前文档站通过 [GitHub Pages](https://mhdfy1988.github.io/cordis-web-framework/) 提供，仓库为 mhdfy1988/cordis-web-framework，自有代码采用 MIT。Pages 工作流只上传静态产物；源码及 kit 在仓库／Release 中分发，不混进站点发布目录。更新框架须先完成根 `test:delivery`，再同步同一候选的 framework.tgz、provenance 输入记录和应用锁文件，最后执行 `build:pages`；不使用旧冻结包配新来源记录。
 
 官方依据：[代码片段引用](https://vuejs.github.io/vitepress/v1/guide/markdown#import-code-snippets)、[Vite 构建 API](https://vite.dev/guide/api-javascript.html#build)、[Pages 静态托管范围](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)。

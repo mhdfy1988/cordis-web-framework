@@ -46,3 +46,5 @@ routes 为静态 GET path/handle，handle 只获得运行时视图；api 为 Jso
 `ApiEnvelope` 为 ok/data 或 error.code 的辨别联合。JSON_PROTOCOL_VERSION=`'1'`，JSON_BYTE_LIMIT=65536，适用于完整 UTF-8 请求／响应；不是字符数量上限。API_STATUS 映射：invalid-input422、unauthenticated401、forbidden403、not-found404、conflict409、protocol-incompatible426、payload-too-large413、unsupported-media415、cancelled499、unavailable503、internal-error500。
 
 服务端请求取消只给信号，不自动回滚事务；客户端丢弃结果也不能断言服务端没有写入。完整实际例见[通信教程](../guide/communication.md)。
+
+自 `0.1.0-rc.2` 起，客户端拒绝内容类型、非法 UTF-8 或超量响应时主动取消尚未读完的数据流，并释放读取锁；不等待上游取消完成，也不以取消错误覆盖原始协议错误。这不代表服务端业务已回滚。

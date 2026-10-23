@@ -4,7 +4,7 @@ export type * from '../contracts/commands.ts';
 /** 按钮、菜单与快捷键只适配这一入口；命令的业务动作仍由所属插件提供。 */
 export function createCommandRegistry(): CommandRegistry {
   const commands = new Map<string, CommandDefinition>();
-  const running = new Map<CommandDefinition, Map<string, { controller: AbortController; done: Promise<CommandResult> }>>();
+  const running = new Map<CommandDefinition, Map<string | undefined, { controller: AbortController; done: Promise<CommandResult> }>>();
   const listeners = new Set<() => void>(); const failures: string[] = [];
   let closed = false; let closing: Promise<void> | undefined;
   const failed = (id: string) => { if (failures.length >= 128) failures.shift(); failures.push(id); };
@@ -39,24 +39,30 @@ export function createCommandRegistry(): CommandRegistry {
     async execute(id: string, context: CommandContext): Promise<CommandResult> {
       if (closed || !commands.has(id)) return 'missing';
       if (context.sessionId !== undefined && (!context.sessionId || context.sessionId.length > 128)) throw new TypeError('命令会话无效');
-      const command = commands.get(id)!; const key = context.sessionId ?? '@root';
+      const command = commands.get(id)!; const key = context.sessionId;
       if (running.get(command)?.has(key)) return 'busy';
-      if (!enabled(id, context)) return 'disabled';
-      if (commands.get(id) !== command || closed) return 'missing';
       const controller = new AbortController();
       const tasks = running.get(command) ?? new Map(); running.set(command, tasks);
-      // 先登记再执行，允许同步动作或 abort 回调重入；取消不会假装动作已结束。
-      const task = { controller, done: Promise.resolve('cancelled' as CommandResult) };
+      // 启用检查也是可重入的用户回调，调用前就登记真实完成句柄。
+      const completion = Promise.withResolvers<CommandResult>();
+      const task = { controller, done: completion.promise }; let published = false;
       tasks.set(key, task);
-      task.done = Promise.resolve().then(async (): Promise<CommandResult> => {
+      const complete = (result: CommandResult) => {
+        tasks.delete(key); if (!tasks.size) running.delete(command);
+        if (published) notify();
+        completion.resolve(result);
+      };
+      if (!enabled(id, context)) { complete('disabled'); return task.done; }
+      if (commands.get(id) !== command || closed) { complete('missing'); return task.done; }
+      void Promise.resolve().then(async (): Promise<CommandResult> => {
         if (controller.signal.aborted || commands.get(id) !== command) return 'cancelled';
         try {
           await command.run(Object.freeze({ ...context }), controller.signal);
           return controller.signal.aborted ? 'cancelled' : 'completed';
         } catch { failed(id); return controller.signal.aborted ? 'cancelled' : 'failed'; }
         finally { /* 清理由统一的 promise 收尾完成。 */ }
-      }).finally(() => { tasks.delete(key); if (!tasks.size) running.delete(command); notify(); });
-      notify(); return task.done;
+      }).then(complete);
+      published = true; notify(); return task.done;
     },
     subscribe(listener: () => void) { if (closed) throw new Error('命令注册表已关闭'); listeners.add(listener); return () => { listeners.delete(listener); }; },
     inspect: () => Object.freeze({ commands: commands.size, running: [...running.values()].reduce((n, tasks) => n + tasks.size, 0), failures: Object.freeze([...failures]) }),

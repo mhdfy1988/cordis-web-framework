@@ -27,7 +27,11 @@ export function createBrowserPluginStore(name: string): PluginStore {
           request.onblocked = () => { reject(new Error('插件库升级被其他页面阻塞')); };
         });
       } catch (error) { released.resolve(); await holding; holding = undefined; throw error; }
-      return async () => { db?.close(); db = undefined; releaseLock?.(); await holding; holding = undefined; releaseLock = undefined; };
+      let releasing: Promise<void> | undefined;
+      return () => {
+        releasing ??= (async () => { db?.close(); db = undefined; releaseLock?.(); await holding; holding = undefined; releaseLock = undefined; })();
+        return releasing;
+      };
     },
     async read() {
       return new Promise<unknown>((resolve, reject) => {

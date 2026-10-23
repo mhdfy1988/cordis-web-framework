@@ -186,6 +186,8 @@ export async function runHttpExample() {
 
 客户端不自动重试、不发送浏览器 cookies、不跟随重定向。业务认证、权限和跨源策略见[通信教程](../guide/communication.md)。
 
+`0.1.0-rc.2` 起，拒绝响应内容类型、非法 UTF-8 或超量数据时主动取消未读响应流，并释放读取锁；上游取消失败不覆盖原始协议错误，也不等待任意上游收尾。客户端取消仍不表示服务端事务已回滚。
+
 ### 协议与状态码
 
 `ApiEnvelope` 是成功数据或安全错误码的辨别联合。`JSON_PROTOCOL_VERSION` 是字符串 `'1'`；`JSON_BYTE_LIMIT` 为 `65536`，计量完整请求／响应 UTF-8 字节，不是字符数。

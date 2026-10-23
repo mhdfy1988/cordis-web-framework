@@ -47,7 +47,7 @@ export function createVueUi(options: {
       const resolution = computed(() => { version.value; return registry.resolve(props.target, props.context, { access: props.access, entryKey: props.entryKey }); });
       return () => {
         const result = resolution.value;
-        const selected = result.entries.map(selection => h(Boundary, { key: `${selection.instance}:${props.context.sessionId ?? '@root'}`,
+        const selected = result.entries.map(selection => h(Boundary, { key: JSON.stringify([selection.instance, props.context.sessionId ?? null]),
           selection, context: props.context, chain: result.kind === 'chain' }));
         const errors = result.failedUnits.map(unit => h('div', { key: `error:${unit}`, role: 'alert', 'data-ui-error': unit || props.target }, '界面扩展暂不可用'));
         const hasSelection = selected.length > 0 || errors.length > 0;

@@ -1,4 +1,4 @@
-import { createApp, defineComponent, h, nextTick, onScopeDispose, onUnmounted, type Component, type PropType } from 'vue';
+import { createApp, defineComponent, h, nextTick, onScopeDispose, onUnmounted, shallowRef, type Component, type PropType } from 'vue';
 import { createUiRegistry, type UiContribution, type UiContext } from 'cordis-web-framework/ui';
 import { createVueUi } from 'cordis-web-framework/presentation-vue/ui';
 import { createCommandRegistry } from 'cordis-web-framework/commands';
@@ -65,6 +65,29 @@ export async function runUiBrowserContracts() {
     check(leaked.length === 0, '已隔离的呈现故障不得逃到应用错误处理器');
   } finally { app.unmount(); ui.close(); target.remove(); }
   check(ui.inspect().observers === 0 && ui.inspect().contributions === 0 && fallbackUnmounts === 1, '卸载必须清除订阅和节点');
+
+  // 同一出口切换上下文时，选择链的局部故障边界也不能把默认上下文与 @root 混为一谈。
+  const mixed = createUiRegistry(); const mixedTarget = document.createElement('div'); document.body.append(mixedTarget);
+  const mixedContext = shallowRef<UiContext>(rootContext);
+  const mixedViews = new Map<string, Component>();
+  const mixedUi = createVueUi({ registry: mixed, views: mixedViews, onError() {} });
+  mixedViews.set('layout', defineComponent({ props: ['uiAccess'], setup: props => () => h(mixedUi.Outlet,
+    { target: 'mixed', context: mixedContext.value, access: props.uiAccess }) }));
+  mixedViews.set('mixed', defineComponent({ props: ['uiContext'], setup(props) {
+    if (props.uiContext.scope === 'root') throw new Error('root-only-fault');
+    return () => h('p', { 'data-mixed-session': props.uiContext.sessionId }, '命名会话正常');
+  } }));
+  mixed.registerDynamic(contribution('layout', 'root', { children: [{ name: 'mixed', kind: 'chain', scope: 'session-maybe', version: '1.0.0' }] }));
+  mixed.registerDynamic(contribution('mixed', 'mixed', { select: () => true }));
+  const mixedApp = createApp(mixedUi.Root);
+  try {
+    mixedApp.mount(mixedTarget); await nextTick(); await nextTick();
+    check(mixedTarget.querySelector('[data-ui-error="mixed"]'), '默认上下文应呈现局部故障');
+    mixedContext.value = { scope: 'session', sessionId: '@root', props: {} }; await nextTick(); await nextTick();
+    check(mixedTarget.querySelector('[data-mixed-session="@root"]'), '命名会话不能复用默认上下文的故障边界');
+    mixedContext.value = rootContext; await nextTick(); await nextTick();
+    check(mixedTarget.querySelector('[data-ui-error="mixed"]'), '切回默认上下文不能复用命名会话的健康组件');
+  } finally { mixedApp.unmount(); mixed.close(); mixedTarget.remove(); }
 
   const container = document.createElement('div'); const input = document.createElement('input'); container.append(input); document.body.append(container);
   const commands = createCommandRegistry(); let invoked = 0;

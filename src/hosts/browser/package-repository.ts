@@ -12,7 +12,7 @@ export function createBrowserPackageRepository(options: { readonly shared?: Read
     if (artifact.key !== data.integrity || artifact.integrity !== data.integrity || artifact.name !== data.name
       || canonicalJson(artifact.manifest) !== canonicalJson(data.declaration.manifest)) throw new Error('浏览器包引用不一致');
     validatePackageDeclaration(data.declaration, environment);
-    for (const name of data.declaration.shared) if (!(name in shared)) throw new Error(`宿主缺少共享模块：${name}`);
+    for (const name of data.declaration.shared) if (!Object.hasOwn(shared, name)) throw new Error(`宿主缺少共享模块：${name}`);
     return data;
   }
   return {

@@ -41,6 +41,7 @@ export async function checkNpmConsumer(consumer, tarball) {
     await page.evaluate(() => window.npmHarness.manager.close()); await page.reload(); await page.locator('html[data-ready="true"]').waitFor();
     assert.equal(await page.evaluate(() => window.npmHarness.manager.inspect().plugins[0].state), 'ready');
     await page.evaluate(() => window.npmHarness.manager.uninstall('example.standard'));
+    await page.evaluate(() => window.npmHarness.checkFailedPreparation());
     await page.evaluate(() => window.npmHarness.manager.close()); assert.equal(await page.evaluate(() => window.npmHarness.urls()), 0);
     return { integrity, independentNpmProducer: true, nodeLifecycle: true, chrome: browser.version(), browserReload: true, publicImportsOnly: true };
   } finally { await browser?.close(); await server.close(); }

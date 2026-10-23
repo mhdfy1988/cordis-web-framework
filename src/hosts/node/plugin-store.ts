@@ -21,7 +21,12 @@ export function createNodePluginStore(filename: string): PluginStore {
       const handle = await open(lock, 'wx');
       try { await handle.writeFile(JSON.stringify({ pid: process.pid })); } catch (error) { await handle.close(); await unlink(lock); throw error; }
       acquired = true;
-      return async () => { if (!acquired) return; await handle.close(); await unlink(lock); acquired = false; };
+      // 释放句柄属于本次获取；旧句柄不能解除后续重新获取的锁。
+      let releasing: Promise<void> | undefined;
+      return () => {
+        releasing ??= (async () => { await handle.close(); await unlink(lock); acquired = false; })();
+        return releasing;
+      };
     },
     read,
     async write(expectedRevision, document) {

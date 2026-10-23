@@ -66,7 +66,11 @@ export function createModules(input: ModuleInputs) {
   } });
   const search = definePlugin({ manifest: manifest('docs.search', [uiService, commandService, documentService], [searchService]), config, setup(scope) {
     const search = input.createSearch(); input.acceptSearch(search);
-    scope.onDispose(() => search.dispose()); scope.provide(searchService, search);
+    // 停止信号先取消索引请求，避免后续命令排空等待尚未执行的 dispose。
+    const cancel = () => search.dispose();
+    scope.signal.addEventListener('abort', cancel, { once: true });
+    scope.onDispose(() => { scope.signal.removeEventListener('abort', cancel); search.dispose(); });
+    scope.provide(searchService, search);
     scope.onDispose(scope.get(commandService).register({ id: 'docs.search', label: '搜索文档', shortcut: { key: 'k', mod: true, allowInput: true }, async run() { await search.show(); } }));
     const registry = scope.get(uiService);
     scope.onDispose(registry.inject(shellPositions.overlays, () => { const lease = registry.registerDynamic({ id: 'docs.search', target: shellPositions.overlays, range: '^1', renderer: 'vue', view: 'docs.search' }); return () => lease.dispose(); }));

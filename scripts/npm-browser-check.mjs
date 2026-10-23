@@ -64,6 +64,8 @@ try {
   await page.locator('[data-package="npm-greeting"]').waitFor({ state: 'detached' });
   await page.evaluate(() => window.npmHarness.manager.close()); await page.reload(); await page.locator('html[data-ready="true"]').waitFor();
   assert.equal(await page.evaluate(() => window.npmHarness.manager.inspect().plugins.length), 0);
+  await page.evaluate(() => window.npmHarness.checkFailedPreparation());
+  assert.equal(await page.evaluate(() => window.npmHarness.urls()), 0);
   await page.evaluate(() => window.npmHarness.manager.close());
   // 关闭安装后端：第二入口只读取预先写好的静态文件。
   const staticRoot = join(directory, 'static'); await mkdir(staticRoot);

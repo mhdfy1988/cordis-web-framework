@@ -2,7 +2,7 @@
 
 以 Cordis 为运行基础的 Web 框架：通过公开契约装配可信插件，分别运行浏览器工具、Node 服务和全栈应用。应用拥有业务，框架提供装配、生命周期、宿主和可替换的界面扩展。
 
-当前预发布版本 `0.1.0-rc.1`，自有代码采用 [MIT](https://github.com/mhdfy1988/cordis-web-framework/blob/main/LICENSE)。[完整文档应用](https://mhdfy1988.github.io/cordis-web-framework/) · [GitHub 预发布与交付包](https://github.com/mhdfy1988/cordis-web-framework/releases)。暂不上 npm，不要从注册表猜装同名包。正式认证、生产存储和不可信插件安全沙箱不在当前能力中。
+当前预发布版本 `0.1.0-rc.2`，自有代码采用 [MIT](https://github.com/mhdfy1988/cordis-web-framework/blob/main/LICENSE)。[完整文档应用](https://mhdfy1988.github.io/cordis-web-framework/) · [GitHub 预发布与交付包](https://github.com/mhdfy1988/cordis-web-framework/releases)。暂不上 npm，不要从注册表猜装同名包。正式认证、生产存储和不可信插件安全沙箱不在当前能力中。
 
 ## 开始使用
 
@@ -53,9 +53,9 @@ npm.cmd run verify:delivery
 
 ## 项目资料
 
-- [更新日志](CHANGELOG.md)：尚未发布的变化。
+- [更新日志](CHANGELOG.md)：各版本修复及尚未发布的变化。
 - [第三方声明](THIRD_PARTY_NOTICES.md)：内置修复和依赖许可。
 - [架构与研发记录](docs/records.md)：阶段决策、来源及当时的证据。
 - [唯一实施计划](docs/implementation-plan.md)：当前推进状态。
 
-本地文档站安装和预览见[文档站维护](docs/guide/documentation.md)，正文直接复用仓库 Markdown，支持中文搜索、目录和代码复制。文档按当前使用、历史记录与未来计划分区；示例核对不替代 W9 的独立开发验收，GitHub Pages 属 W10，未提交、推送或上线。
+文档应用安装、预览和部署维护见[文档站维护](docs/guide/documentation.md)，正文直接复用仓库 Markdown，支持中文搜索、目录和代码复制。文档按当前使用、历史记录与未来计划分区；示例核对不替代独立开发验收，线上版本以部署结果为准。

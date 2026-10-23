@@ -108,6 +108,20 @@ test('清单：配置错误带完整字段路径，另一合法插件也不能�
   assert.deepEqual(result.issues[0].path, ['plugins', 1, 'config', 'value']);
 });
 
+test('清单：拒绝配置即使未给出问题明细，也必须在创建运行时前失败', options, async () => {
+  const manifest = metadata('empty-issues');
+  const catalog = new Map<string, RegisteredPlugin>([['empty-issues', {
+    manifest, prepare: () => ({ ok: false, issues: [] }),
+  }]]);
+  const document = { formatVersion: 1, plugins: [{ id: manifest.id, version: manifest.version, entry: manifest.id }], bindings: {} };
+  const result = validateComposition(document, catalog);
+  assert.equal(result.ok, false);
+  if (result.ok) assert.fail('不得将拒绝配置的插件静默略过');
+  assert.equal(result.issues[0].code, 'config-invalid');
+  assert.deepEqual(result.issues[0].path, ['plugins', 0, 'config']);
+  await rejectBeforeRuntime(document, catalog, 'config-invalid');
+});
+
 test('清单：缺省配置由模块 schema 补全，跨激活的配置快照保持不可写', options, async () => {
   let frozen = false;
   let configured = 0;
