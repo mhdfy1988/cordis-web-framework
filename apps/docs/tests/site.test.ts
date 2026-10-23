@@ -146,6 +146,10 @@ try {
   assert.deepEqual(shutdown.commands, { commands: 0, running: 0, failures: [] });
   assert.deepEqual(shutdown.navigation, { routes: 0, navigation: 0, listeners: 0, closed: true });
   assert.equal(await page.locator('#app').getAttribute('data-theme'), null);
+  // 刷新不能偷偷启动已明确停止的本页应用，更不能触发插件恢复。
+  await page.reload(); await page.getByRole('heading', { name: '文档应用已停止' }).waitFor();
+  assert.equal(await page.locator('.plugin-manager,.default-shell').count(), 0);
+  assert.equal(await page.locator('#app').isVisible(), false);
   await page.getByRole('button', { name: '重新打开文档站' }).click();
   await page.locator('.markdown-content h1').waitFor();
   await page.goto(server.url + '#/missing-document');
@@ -162,5 +166,6 @@ await import('./doc-examples.test.ts');
 await import('./default-ui.test.ts');
 await import('./management.test.ts');
 await import('./management-controller.test.ts');
+await import('./page-run-state.test.ts');
 await import('./plugin-settings.test.ts');
 await import('./topbar.test.ts');

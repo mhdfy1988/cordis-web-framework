@@ -2,7 +2,7 @@
 
 用公开契约组合可信插件，开发浏览器工具、Node 服务或全栈应用。框架负责装配和生命周期；业务模型、算法、账户与数据策略属于应用。
 
-当前为 `0.1.0-rc.2` 预发布，包名 `cordis-web-framework`，自有代码采用 MIT。[GitHub Release](https://github.com/mhdfy1988/cordis-web-framework/releases) 提供交付包，暂不上 npm；不要从注册表猜装同名包。文档站使用本框架驱动的独立应用。
+当前为 `0.1.0-rc.3` 预发布，包名 `cordis-web-framework`，自有代码采用 MIT。[GitHub Release](https://github.com/mhdfy1988/cordis-web-framework/releases) 提供交付包，暂不上 npm；不要从注册表猜装同名包。文档站使用本框架驱动的独立应用。
 
 ## 从这里开始
 

@@ -4,8 +4,12 @@
 
 ## [Unreleased]
 
+## [0.1.0-rc.3] - 2026-10-23
+
 ### Fixed
 
+- 独立插件包面板使用默认主题背景、悬停和焦点变量，修复深色模式出现白底浅字的问题；仍兼容显式 surface／hover 覆盖。
+- 文档应用“停止应用”保存当前标签页暂停状态，刷新不再自动重启；手动重新打开才恢复，不改变其他标签页或已保存的插件启用意愿。
 - 浏览器同源同名插件库不再长期独占页面，修复第二个标签页无法启动的问题。管理操作按次串行，跨页重新读取并协调安装、启停和配置；旧修订提交明确拒绝，关闭一个页面不阻断其他页面。
 
 ### Added
@@ -70,6 +74,7 @@
 - 客户端断开后仍等待真实 JSON 处理器收尾，再释放插件与数据库，避免取消被误认为服务端已结束。
 - 界面包装层不让空透传属性覆盖当前页面键；生产模式卸载故障继续交给宿主报告清理失败，不被呈现边界吞掉。
 
-[Unreleased]: https://github.com/mhdfy1988/cordis-web-framework/compare/v0.1.0-rc.2...HEAD
+[Unreleased]: https://github.com/mhdfy1988/cordis-web-framework/compare/v0.1.0-rc.3...HEAD
+[0.1.0-rc.3]: https://github.com/mhdfy1988/cordis-web-framework/compare/v0.1.0-rc.2...v0.1.0-rc.3
 [0.1.0-rc.2]: https://github.com/mhdfy1988/cordis-web-framework/compare/v0.1.0-rc.1...v0.1.0-rc.2
 [0.1.0-rc.1]: https://github.com/mhdfy1988/cordis-web-framework/releases/tag/v0.1.0-rc.1

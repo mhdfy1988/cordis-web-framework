@@ -33,6 +33,7 @@ export function createPluginController(input: { document: CompositionDocument; c
   }
   return {
     snapshot: readonly(snapshot), busy: readonly(busy), error: readonly(error), variant: readonly(variant), requiredPluginIds,
+    reportError(message: string) { error.value = message; },
     get manager() { return manager; },
     management: { store: input.store, loader: input.loader, packages: input.packages, builtins, initialize() {
       // 只有框架确认新库未初始化时才读取旧设置；成功提交后旧键不再参与管理。

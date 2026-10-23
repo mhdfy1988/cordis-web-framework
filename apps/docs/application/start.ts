@@ -31,7 +31,8 @@ import PluginManager from './management/PluginManager.vue';
 import { createSettingsStore } from './management/settings.ts';
 import { createBrowserPluginStore, createBrowserPluginLoader, createBrowserPackageRepository } from 'cordis-web-framework/hosts/browser/plugins';
 
-export async function startDocumentation(target: HTMLElement, base: string, report: (value: unknown) => void): Promise<HostHandle> {
+export async function startDocumentation(target: HTMLElement, base: string, report: (value: unknown) => void,
+  beforeStop: () => void = () => {}): Promise<HostHandle> {
   const response = await fetch(base + 'manifest.json'); if (!response.ok) throw new Error('文档目录读取失败');
   const manifest = manifestSchema.parse(await response.json()); if (manifest.base !== base) throw new Error('站点基础路径与文档产物不一致');
   const ui = createUiRegistry(); const commands = createCommandRegistry(); const session = createDocumentSession(base);
@@ -64,6 +65,8 @@ export async function startDocumentation(target: HTMLElement, base: string, repo
       app.provide(pluginControllerKey, controller);
       app.provide(outletKey, presenter.Outlet);
       app.provide(stopKey, async () => {
+        try { beforeStop(); }
+        catch { controller.reportError('无法保存页面暂停状态，应用尚未停止；请检查浏览器会话存储'); return; }
         const result = await host!.stop(); report({ shutdown: result, ui: ui.inspect(), commands: commands.inspect(), navigation: navigation!.inspect() });
       });
     },

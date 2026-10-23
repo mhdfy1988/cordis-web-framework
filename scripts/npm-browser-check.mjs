@@ -28,6 +28,25 @@ try {
   const context = await browser.newContext(); const page = await context.newPage(); const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(address + '/fullstack/'); await page.locator('html[data-ready="true"]').waitFor();
+  // 默认主题只提供 background/panel，不要求消费者额外声明 surface/hover 别名。
+  for (const [mode, background, foreground, panel, accent] of [
+    ['dark', '#1b1b1f', '#e5e5e8', '#161618', '#a8b1ff'],
+    ['light', '#ffffff', '#303038', '#f6f6f7', '#3451b2'],
+  ]) {
+    await page.locator('#manager').evaluate((element, tokens) => {
+      for (const [key, value] of Object.entries(tokens)) element.style.setProperty('--cw-' + key, value);
+    }, { background, text: foreground, panel, accent });
+    const colors = await page.locator('.cw-package-panel').evaluate(element => {
+      const style = getComputedStyle(element); return { background: style.backgroundColor, text: style.color };
+    });
+    assert.equal(colors.background, mode === 'dark' ? 'rgb(27, 27, 31)' : 'rgb(255, 255, 255)');
+    assert.equal(colors.text, mode === 'dark' ? 'rgb(229, 229, 232)' : 'rgb(48, 48, 56)');
+    await page.getByLabel('浏览器插件包').focus();
+    assert.equal(await page.getByLabel('浏览器插件包').evaluate(element => getComputedStyle(element).outlineColor),
+      mode === 'dark' ? 'rgb(168, 177, 255)' : 'rgb(52, 81, 178)');
+  }
+  await page.locator('#manager').evaluate(element => element.removeAttribute('style'));
+  assert.equal(await page.locator('.cw-package-panel').evaluate(element => getComputedStyle(element).backgroundColor), 'rgb(255, 255, 255)');
   const fixture = await createNpmFixture(directory, 'npm-greeting', true);
   const artifact = await repository.stage({ type: 'file', path: fixture.path }, { acceptTrustedCode: true });
   data = await repository.exportBrowser(artifact);

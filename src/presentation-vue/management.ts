@@ -64,11 +64,11 @@ export const PluginPackagePanel = defineComponent({
 });
 
 const styles = `
-.cw-package-panel{font:14px/1.6 system-ui,sans-serif;color:var(--cw-text,#253043);border:1px solid var(--cw-border,#dce1e8);border-radius:10px;padding:24px;background:var(--cw-surface,#fff)}
+.cw-package-panel{font:14px/1.6 system-ui,sans-serif;color:var(--cw-text,#253043);border:1px solid var(--cw-border,#dce1e8);border-radius:10px;padding:24px;background:var(--cw-surface,var(--cw-background,#fff))}
 .cw-package-panel h2{font-size:20px;margin:0 0 20px}.cw-package-panel form{display:grid;gap:14px}.cw-package-file{display:grid;gap:6px}.cw-package-file input{max-width:100%;font:inherit}
 .cw-package-trust{display:flex;align-items:flex-start;gap:8px}.cw-package-trust input{margin-top:5px}.cw-package-actions{display:flex;gap:8px;flex-wrap:wrap}
-.cw-package-panel button{font:inherit;border:1px solid var(--cw-border,#cbd3df);border-radius:6px;padding:7px 14px;background:var(--cw-surface,#fff);color:inherit;cursor:pointer}
-.cw-package-panel button:hover:not(:disabled){background:var(--cw-hover,#eef3fa)}.cw-package-panel button:focus-visible,.cw-package-panel input:focus-visible{outline:2px solid #2563eb;outline-offset:3px}.cw-package-panel button:disabled{opacity:.5;cursor:default}
+.cw-package-panel button{font:inherit;border:1px solid var(--cw-border,#cbd3df);border-radius:6px;padding:7px 14px;background:var(--cw-surface,var(--cw-background,#fff));color:inherit;cursor:pointer}
+.cw-package-panel button:hover:not(:disabled){background:var(--cw-hover,var(--cw-panel,#eef3fa))}.cw-package-panel button:focus-visible,.cw-package-panel input:focus-visible{outline:2px solid var(--cw-accent,#2563eb);outline-offset:3px}.cw-package-panel button:disabled{opacity:.5;cursor:default}
 .cw-package-feedback{padding:10px 0;overflow-wrap:anywhere}.cw-package-list article{display:flex;gap:20px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--cw-border,#dce1e8);padding:18px 0 0;margin-top:20px}
 .cw-package-identity{flex:1;min-width:140px;overflow-wrap:anywhere}.cw-package-panel small{display:block;color:var(--cw-muted,#657185)}.cw-package-state{min-width:80px}.cw-package-empty{color:var(--cw-muted,#657185);margin-bottom:0}.cw-package-confirm{display:flex;flex-wrap:wrap;align-items:center;gap:10px;width:100%}
 @media(max-width:600px){.cw-package-panel{padding:16px}.cw-package-list article{gap:12px}.cw-package-identity{flex-basis:65%}.cw-package-state{min-width:0}}

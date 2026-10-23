@@ -2,9 +2,9 @@
 
 以 Cordis 为运行基础的 Web 框架：通过公开契约装配可信插件，分别运行浏览器工具、Node 服务和全栈应用。应用拥有业务，框架提供装配、生命周期、宿主和可替换的界面扩展。
 
-当前预发布版本 `0.1.0-rc.2`，自有代码采用 [MIT](https://github.com/mhdfy1988/cordis-web-framework/blob/main/LICENSE)。[完整文档应用](https://mhdfy1988.github.io/cordis-web-framework/) · [GitHub 预发布与交付包](https://github.com/mhdfy1988/cordis-web-framework/releases)。暂不上 npm，不要从注册表猜装同名包。正式认证、生产存储和不可信插件安全沙箱不在当前能力中。
+当前预发布版本 `0.1.0-rc.3`，自有代码采用 [MIT](https://github.com/mhdfy1988/cordis-web-framework/blob/main/LICENSE)。[完整文档应用](https://mhdfy1988.github.io/cordis-web-framework/) · [GitHub 预发布与交付包](https://github.com/mhdfy1988/cordis-web-framework/releases)。暂不上 npm，不要从注册表猜装同名包。正式认证、生产存储和不可信插件安全沙箱不在当前能力中。
 
-当前源码与文档站包含多标签页配置同步修复：浏览器可同时打开同一插件库，安装、启停与配置跨页协调，旧修订保存明确拒绝。此项仍列于 [Unreleased](CHANGELOG.md#unreleased)，现有 rc.2 发布附件不包含；后台冻结页面在恢复后补读，Node 单宿主独占保护不变。
+rc.3 包含多标签页配置同步、独立插件包深色适配，以及文档应用停止后刷新保持暂停。浏览器可同时打开同一插件库，旧修订保存明确拒绝；页面暂停只属于当前标签页，手动恢复后继续按原插件配置启动。后台冻结页面在恢复后补读，Node 单宿主独占保护不变。详见[更新日志](CHANGELOG.md)。
 
 ## 开始使用
 

@@ -31,6 +31,15 @@ try {
   await state('docs.outline', 'ready');
   await peer.getByRole('button', { name: '停止应用', exact: true }).click();
   await peer.getByRole('heading', { name: '文档应用已停止', exact: true }).waitFor();
+  await peer.reload(); await peer.getByRole('heading', { name: '文档应用已停止', exact: true }).waitFor();
+  assert.equal(await page.locator('.plugin-manager').count(), 1, '另一标签页保持运行');
+  await peer.getByRole('button', { name: '重新打开文档站', exact: true }).click();
+  await peer.locator('.plugin-manager,.default-shell').waitFor();
+  // 关闭导航时当前管理路由可被撤销；恢复后允许回到文档首页，再正常进入管理页。
+  if (await peer.locator('.default-shell').count()) await peer.goto(server.url + '#/plugins');
+  await peer.getByRole('heading', { name: '插件管理', exact: true }).waitFor();
+  await peer.getByRole('button', { name: '停止应用', exact: true }).click();
+  await peer.getByRole('heading', { name: '文档应用已停止', exact: true }).waitFor();
   await peer.close();
   assert.equal(await row('docs.foundation').getByRole('button', { name: /停用/ }).count(), 0);
   const pendingSearch = new Promise<void>(resolve => { releaseSearch = resolve; });
@@ -55,6 +64,10 @@ try {
   await back(); await page.getByRole('button', { name: '切换深浅色主题' }).click();
   await page.waitForFunction(() => document.getElementById('app')?.dataset.theme === 'dark');
   await manager(); await page.screenshot({ path: 'output/plugin-manager-dark.png' });
+  await page.getByRole('button', { name: '独立插件包', exact: true }).click();
+  assert.equal(await page.locator('.cw-package-panel').evaluate(element => getComputedStyle(element).backgroundColor), 'rgb(27, 27, 31)');
+  await page.screenshot({ path: 'output/plugin-packages-dark.png', fullPage: true });
+  await page.getByRole('button', { name: '应用插件', exact: true }).click();
   await back(); await page.getByRole('button', { name: '切换深浅色主题' }).click();
   await manager(); await row('docs.search').getByRole('button', { name: '停用文档搜索', exact: true }).click();
   await state('docs.search', 'not-loaded'); await state('docs.header', 'not-loaded');
@@ -111,6 +124,18 @@ try {
   await page.reload();
   for (const id of ['ui.default-theme', 'docs.theme-control', 'docs.search', 'docs.header', 'docs.outline', 'ui.default-layout']) await state(id, 'ready');
   assert.equal(await page.getByRole('alert').count(), 0);
+  await page.evaluate(() => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(key, value) {
+      if (key.endsWith(':page-paused:v1')) throw new Error('storage-blocked');
+      return original.call(this, key, value);
+    };
+    Object.assign(window, { restorePageStorage: () => { Storage.prototype.setItem = original; } });
+  });
+  await page.getByRole('button', { name: '停止应用', exact: true }).click();
+  await page.getByRole('alert').filter({ hasText: '无法保存页面暂停状态' }).waitFor();
+  assert.equal(await page.locator('.plugin-manager').count(), 1, '保存拒绝时不能停止后假报状态会保留');
+  await page.evaluate(() => (window as unknown as { restorePageStorage(): void }).restorePageStorage());
   await page.getByRole('button', { name: '停止应用', exact: true }).click(); await page.getByRole('heading', { name: '文档应用已停止', exact: true }).waitFor();
   const stopped = JSON.parse(await page.locator('#application-state pre').innerText());
   assert.equal(stopped.shutdown.state, 'stopped'); assert.deepEqual(stopped.shutdown.runtime.diagnostics, []);
